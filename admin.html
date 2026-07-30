@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>관리자 페이지 - 조합원 사업장관리</title>
+<style>
+  :root {
+    --accent: #2f6f4f;
+    --accent-light: #e8f3ec;
+    --warn: #b4531f;
+    --warn-light: #fdece1;
+    --border: #ddd;
+    --text: #222;
+    --muted: #777;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Malgun Gothic", sans-serif;
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 0 16px;
+    color: var(--text);
+    line-height: 1.5;
+  }
+  h1 { font-size: 20px; margin-bottom: 4px; }
+  .sub { color: var(--muted); font-size: 13px; margin-bottom: 20px; }
+  a.back { font-size: 13px; color: var(--accent); text-decoration: none; }
+  .tabs { display: flex; gap: 8px; margin: 20px 0; border-bottom: 1px solid var(--border); }
+  .tab {
+    padding: 10px 16px;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--muted);
+    border-bottom: 2px solid transparent;
+  }
+  .tab.active { color: var(--accent); border-color: var(--accent); font-weight: 600; }
+  .card {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .filters input, .filters select {
+    padding: 7px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 13px;
+  }
+  button {
+    padding: 8px 14px;
+    font-size: 13px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: white;
+    cursor: pointer;
+  }
+  button.primary { background: var(--accent); color: white; border-color: var(--accent); }
+  button.danger { background: var(--warn-light); color: var(--warn); border-color: var(--warn-light); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { padding: 8px 6px; border-bottom: 1px solid #eee; text-align: left; vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 100px; font-size: 11px; }
+  .badge.insert { background: var(--accent-light); color: var(--accent); }
+  .badge.update { background: #fff6e0; color: #a06b00; }
+  .badge.delete { background: var(--warn-light); color: var(--warn); }
+  .badge.force { background: #fdeaea; color: #b00020; }
+  .diff-key { font-weight: 600; }
+  .diff-old { color: var(--warn); text-decoration: line-through; }
+  .diff-new { color: var(--accent); }
+  #blocked { text-align: center; padding: 80px 0; color: var(--warn); }
+  .add-row { display: flex; gap: 8px; margin-bottom: 14px; }
+  .add-row input { flex: 1; }
+</style>
+</head>
+<body>
+
+  <a class="back" href="index.html">← 입력 페이지로</a>
+  <h1>관리자 페이지</h1>
+  <p class="sub">등록/수정 이력과 접근 허용 사용자를 관리합니다.</p>
+
+  <div id="blocked" style="display:none;">
+    ⚠️ 관리자 권한이 없어 접근할 수 없습니다.
+  </div>
+
+  <div id="adminArea" style="display:none;">
+    <div class="tabs">
+      <div class="tab active" data-tab="history">이력관리</div>
+      <div class="tab" data-tab="users">사용자관리</div>
+    </div>
+
+    <!-- 이력관리 탭 -->
+    <div id="tab-history" class="card">
+      <div class="filters">
+        <input type="text" id="filterActor" placeholder="등록자 이메일" />
+        <input type="text" id="filterBusiness" placeholder="사업장명" />
+        <select id="filterAction">
+          <option value="">전체 액션</option>
+          <option value="INSERT">INSERT</option>
+          <option value="UPDATE">UPDATE</option>
+          <option value="DELETE">DELETE</option>
+        </select>
+        <button id="filterBtn">조회</button>
+      </div>
+      <div id="historyList">불러오는 중...</div>
+    </div>
+
+    <!-- 사용자관리 탭 -->
+    <div id="tab-users" class="card" style="display:none;">
+      <div class="add-row">
+        <input type="text" id="newUserEmail" placeholder="추가할 구글 이메일" />
+        <select id="newUserRole">
+          <option value="user">user</option>
+          <option value="admin">admin</option>
+        </select>
+        <button class="primary" id="addUserBtn">추가</button>
+      </div>
+      <div id="userStatus"></div>
+      <div id="userList">불러오는 중...</div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = "https://kakujhsdxyljkstpfymk.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtha3VqaHNkeHlsamtzdHBmeW1rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzNDM1OTYsImV4cCI6MjEwMDkxOTU5Nn0.5mKR4Zksu9J791-fqM9KL-scOS0xB3Hhvj5nuQKoVbE";
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const el = (id) => document.getElementById(id);
+    let currentEmail = null;
+
+    async function init() {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (!session) {
+        window.location.href = "index.html";
+        return;
+      }
+      currentEmail = session.user.email;
+      const { data } = await supabaseClient
+        .from("allowed_users")
+        .select("email, role")
+        .eq("email", currentEmail)
+        .maybeSingle();
+
+      if (!data || data.role !== "admin") {
+        el("blocked").style.display = "block";
+        return;
+      }
+      el("adminArea").style.display = "block";
+      loadHistory();
+      loadUsers();
+    }
+    init();
+
+    // ---------- 탭 전환 ----------
+    document.querySelectorAll(".tab").forEach(tab => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+        tab.classList.add("active");
+        el("tab-history").style.display = tab.dataset.tab === "history" ? "block" : "none";
+        el("tab-users").style.display = tab.dataset.tab === "users" ? "block" : "none";
+      });
+    });
+
+    // ---------- 이력관리 ----------
+    el("filterBtn").addEventListener("click", loadHistory);
+
+    function renderDiff(changed) {
+      if (!changed || Object.keys(changed).length === 0) return "-";
+      return Object.entries(changed).map(([key, val]) => {
+        if (val && typeof val === "object" && ("old" in val || "new" in val)) {
+          return `<div><span class="diff-key">${key}</span>: <span class="diff-old">${JSON.stringify(val.old)}</span> → <span class="diff-new">${JSON.stringify(val.new)}</span></div>`;
+        }
+        return `<div><span class="diff-key">${key}</span>: ${JSON.stringify(val)}</div>`;
+      }).join("");
+    }
+
+    async function loadHistory() {
+      el("historyList").innerHTML = "불러오는 중...";
+      let query = supabaseClient
+        .from("audit_logs_view")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(100);
+
+      const actor = el("filterActor").value.trim();
+      const biz = el("filterBusiness").value.trim();
+      const action = el("filterAction").value;
+
+      if (actor) query = query.ilike("actor_email", `%${actor}%`);
+      if (biz) query = query.ilike("business_name", `%${biz}%`);
+      if (action) query = query.eq("action", action);
+
+      const { data, error } = await query;
+      if (error) {
+        el("historyList").innerHTML = `조회 실패: ${error.message}`;
+        return;
+      }
+      if (!data || data.length === 0) {
+        el("historyList").innerHTML = "이력이 없습니다.";
+        return;
+      }
+      el("historyList").innerHTML = `
+        <table>
+          <thead>
+            <tr><th>일시</th><th>액션</th><th>사업장</th><th>고객번호</th><th>등록자</th><th>변경내용</th></tr>
+          </thead>
+          <tbody>
+            ${data.map(r => `
+              <tr>
+                <td>${new Date(r.created_at).toLocaleString("ko-KR")}</td>
+                <td><span class="badge ${r.action.toLowerCase().includes('delete') ? 'delete' : r.action.toLowerCase().includes('update') ? 'update' : r.action.toLowerCase().includes('force') ? 'force' : 'insert'}">${r.action}</span></td>
+                <td>${r.business_name || "-"}</td>
+                <td>${r.customer_id || "-"}</td>
+                <td>${r.actor_email || "-"}</td>
+                <td style="max-width:280px;">${renderDiff(r.changed_fields)}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      `;
+    }
+
+    // ---------- 사용자관리 ----------
+    el("addUserBtn").addEventListener("click", async () => {
+      const email = el("newUserEmail").value.trim();
+      const role = el("newUserRole").value;
+      if (!email) return;
+      const { error } = await supabaseClient.from("allowed_users").insert({ email, role });
+      if (error) {
+        el("userStatus").innerHTML = `<p style="color:var(--warn);">추가 실패: ${error.message}</p>`;
+        return;
+      }
+      el("newUserEmail").value = "";
+      el("userStatus").innerHTML = `<p style="color:var(--accent);">✅ ${email} 추가됨</p>`;
+      loadUsers();
+    });
+
+    async function loadUsers() {
+      const { data, error } = await supabaseClient
+        .from("allowed_users")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        el("userList").innerHTML = `조회 실패: ${error.message}`;
+        return;
+      }
+      el("userList").innerHTML = `
+        <table>
+          <thead><tr><th>이메일</th><th>권한</th><th>등록일</th><th></th></tr></thead>
+          <tbody>
+            ${data.map(u => `
+              <tr>
+                <td>${u.email}</td>
+                <td>
+                  <select data-email="${u.email}" class="roleSelect">
+                    <option value="user" ${u.role === "user" ? "selected" : ""}>user</option>
+                    <option value="admin" ${u.role === "admin" ? "selected" : ""}>admin</option>
+                  </select>
+                </td>
+                <td>${new Date(u.created_at).toLocaleDateString("ko-KR")}</td>
+                <td><button class="danger" data-del="${u.email}">삭제</button></td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      `;
+
+      document.querySelectorAll(".roleSelect").forEach(sel => {
+        sel.addEventListener("change", async () => {
+          const email = sel.dataset.email;
+          const { error } = await supabaseClient
+            .from("allowed_users")
+            .update({ role: sel.value })
+            .eq("email", email);
+          if (error) alert("권한 변경 실패: " + error.message);
+        });
+      });
+
+      document.querySelectorAll("[data-del]").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          const email = btn.dataset.del;
+          if (email === currentEmail) {
+            alert("본인 계정은 삭제할 수 없습니다.");
+            return;
+          }
+          if (!confirm(`${email} 계정의 접근 권한을 삭제할까요?`)) return;
+          const { error } = await supabaseClient.from("allowed_users").delete().eq("email", email);
+          if (error) {
+            alert("삭제 실패: " + error.message);
+            return;
+          }
+          loadUsers();
+        });
+      });
+    }
+  </script>
+</body>
+</html>
