@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>조합원 사업장관리 - 로그인 테스트</title>
+<style>
+  body {
+    font-family: -apple-system, "Malgun Gothic", sans-serif;
+    max-width: 480px;
+    margin: 80px auto;
+    text-align: center;
+    color: #222;
+  }
+  button {
+    padding: 12px 24px;
+    font-size: 16px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    background: white;
+    cursor: pointer;
+  }
+  button:hover { background: #f5f5f5; }
+  #status {
+    margin-top: 24px;
+    padding: 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    white-space: pre-wrap;
+    text-align: left;
+  }
+  .ok { background: #e6f7ee; color: #0a7a3d; }
+  .fail { background: #fdeaea; color: #b00020; }
+  .info { background: #eef2ff; color: #333; }
+</style>
+</head>
+<body>
+
+  <h2>조합원 사업장관리 시스템</h2>
+  <p>로그인 테스트 페이지</p>
+
+  <div id="loginBox">
+    <button id="loginBtn">구글로 로그인</button>
+  </div>
+
+  <div id="userBox" style="display:none;">
+    <p id="userEmail"></p>
+    <button id="logoutBtn">로그아웃</button>
+  </div>
+
+  <div id="status" class="info">아직 로그인하지 않았습니다.</div>
+
+  <!-- Supabase JS SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    // ====== 여기에 본인 Supabase 정보 입력됨 ======
+    const SUPABASE_URL = "https://kakujhsdxyljkstpfymk.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtha3VqaHNkeHlsamtzdHBmeW1rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzNDM1OTYsImV4cCI6MjEwMDkxOTU5Nn0.5mKR4Zksu9J791-fqM9KL-scOS0xB3Hhvj5nuQKoVbE";
+    // ==============================================
+
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const loginBox = document.getElementById("loginBox");
+    const userBox = document.getElementById("userBox");
+    const userEmailEl = document.getElementById("userEmail");
+    const statusEl = document.getElementById("status");
+
+    function setStatus(msg, type) {
+      statusEl.textContent = msg;
+      statusEl.className = type;
+    }
+
+    // 구글 로그인 버튼
+    document.getElementById("loginBtn").addEventListener("click", async () => {
+      const { error } = await supabaseClient.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: window.location.href
+        }
+      });
+      if (error) {
+        setStatus("로그인 시작 실패: " + error.message, "fail");
+      }
+    });
+
+    // 로그아웃 버튼
+    document.getElementById("logoutBtn").addEventListener("click", async () => {
+      await supabaseClient.auth.signOut();
+      window.location.reload();
+    });
+
+    // 화이트리스트(allowed_users) 확인
+    async function checkAllowedUser(email) {
+      const { data, error } = await supabaseClient
+        .from("allowed_users")
+        .select("email, role")
+        .eq("email", email)
+        .maybeSingle();
+
+      if (error) {
+        setStatus("allowed_users 조회 중 오류: " + error.message, "fail");
+        return;
+      }
+
+      if (data) {
+        setStatus(
+          `✅ 로그인 성공 & 접근 허용됨\n이메일: ${data.email}\n권한: ${data.role}`,
+          "ok"
+        );
+      } else {
+        setStatus(
+          `⚠️ 구글 로그인은 성공했지만, 이 이메일(${email})은 allowed_users 테이블에 등록되어 있지 않아 접근이 차단됩니다.\nSupabase SQL Editor에서 아래처럼 등록해주세요:\n\ninsert into allowed_users (email, role) values ('${email}', 'user');`,
+          "fail"
+        );
+      }
+    }
+
+    // 세션 확인 및 화면 갱신
+    async function refreshUI() {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (session) {
+        loginBox.style.display = "none";
+        userBox.style.display = "block";
+        userEmailEl.textContent = "로그인됨: " + session.user.email;
+        await checkAllowedUser(session.user.email);
+      } else {
+        loginBox.style.display = "block";
+        userBox.style.display = "none";
+        setStatus("아직 로그인하지 않았습니다.", "info");
+      }
+    }
+
+    supabaseClient.auth.onAuthStateChange((_event, _session) => {
+      refreshUI();
+    });
+
+    refreshUI();
+  </script>
+</body>
+</html>
