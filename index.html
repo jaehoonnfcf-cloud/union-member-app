@@ -23,16 +23,16 @@
   * { box-sizing: border-box; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Malgun Gothic", sans-serif;
-    max-width: 760px;
+    max-width: 1360px;
     margin: 0 auto;
-    padding: 48px 20px 80px;
+    padding: 40px 24px 80px;
     background: var(--bg);
     color: var(--text);
     line-height: 1.55;
     -webkit-font-smoothing: antialiased;
   }
   h1 { font-size: 21px; font-weight: 700; letter-spacing: -0.01em; margin: 0 0 4px; }
-  .sub { color: var(--muted); font-size: 13px; margin: 0 0 28px; }
+  .sub { color: var(--muted); font-size: 13px; margin: 0 0 24px; }
   .card {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -133,15 +133,17 @@
   .banner.warn { background: var(--warn-light); color: var(--warn); border-color: #f0d9bf; }
   .banner.info { background: #f4f4f5; color: var(--muted); }
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th, td { padding: 9px 8px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+  th, td { padding: 9px 8px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; white-space: nowrap; }
   th { color: var(--muted); font-weight: 600; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.02em; }
   tbody tr:hover { background: #fafafa; }
+  .table-scroll { overflow-x: auto; }
   .badge {
     display: inline-block;
     padding: 2px 9px;
     border-radius: 100px;
     font-size: 11px;
     font-weight: 600;
+    white-space: nowrap;
   }
   .badge.member { background: var(--accent-light); color: var(--accent-dark); }
   .badge.nonmember { background: #f4f4f5; color: var(--muted); }
@@ -164,6 +166,18 @@
     font-weight: 600;
   }
   .topbar a:hover { text-decoration: underline; }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+  @media (max-width: 980px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+  .layout .right .card { position: sticky; top: 20px; }
+  .del-cell { text-align: right; }
 </style>
 </head>
 <body>
@@ -185,62 +199,68 @@
       </div>
     </div>
 
-    <div class="card">
-      <h3>사업장 등록</h3>
+    <div class="layout">
+      <div class="left">
+        <div class="card">
+          <h3>사업장 등록</h3>
 
-      <label>고객번호 <span class="hint">(8자리 숫자 또는 임시번호)</span></label>
-      <div class="row">
-        <input type="text" id="customerId" placeholder="예: 12345678 또는 a1234567" />
-        <button id="genTempIdBtn" style="flex:0 0 auto;">임시번호 발급</button>
+          <label>고객번호 <span class="hint">(8자리 숫자 또는 임시번호)</span></label>
+          <div class="row">
+            <input type="text" id="customerId" placeholder="예: 12345678 또는 a1234567" />
+            <button id="genTempIdBtn" style="flex:0 0 auto;">임시번호 발급</button>
+          </div>
+          <div id="memberCheckStatus" class="status-line"></div>
+
+          <label>성명</label>
+          <input type="text" id="customerName" placeholder="개인고객 실명" />
+
+          <label>휴대폰번호</label>
+          <input type="text" id="mobilePhone" placeholder="조합원 명단에 있으면 자동입력" />
+
+          <label>사업자번호 <span class="hint">(선택)</span></label>
+          <input type="text" id="bizRegNo" placeholder="000-00-00000" maxlength="12" />
+
+          <div class="toggle-row">
+            <input type="checkbox" id="manualToggle" />
+            <label for="manualToggle" style="margin:0;font-weight:400;">네이버 검색 없이 수기로 입력</label>
+          </div>
+
+          <div id="naverSearchBox">
+            <label>상호 검색 (네이버)</label>
+            <input type="text" id="naverQuery" placeholder="업체명 또는 주소로 검색" />
+            <div id="naverResults" class="search-results" style="display:none;"></div>
+          </div>
+
+          <label>상호</label>
+          <input type="text" id="businessName" />
+
+          <label>주소</label>
+          <input type="text" id="address" />
+
+          <label>전화번호(대표번호)</label>
+          <input type="text" id="phone" />
+
+          <label>상품 <span class="hint">(취급 품목/업종)</span></label>
+          <input type="text" id="category" />
+
+          <label>기타사항 <span class="hint">(수기 메모)</span></label>
+          <textarea id="memo" placeholder="고객 특징, 관련자 정보 등"></textarea>
+
+          <div style="margin-top:18px; display:flex; gap:8px;">
+            <button class="primary" id="saveBtn">저장</button>
+            <button class="ghost" id="resetBtn">초기화</button>
+          </div>
+
+          <div id="saveStatus"></div>
+        </div>
       </div>
-      <div id="memberCheckStatus" class="status-line"></div>
 
-      <label>성명</label>
-      <input type="text" id="customerName" placeholder="개인고객 실명" />
-
-      <label>휴대폰번호</label>
-      <input type="text" id="mobilePhone" placeholder="조합원 명단에 있으면 자동입력" />
-
-      <label>사업자번호 <span class="hint">(선택)</span></label>
-      <input type="text" id="bizRegNo" placeholder="000-00-00000" maxlength="12" />
-
-      <div class="toggle-row">
-        <input type="checkbox" id="manualToggle" />
-        <label for="manualToggle" style="margin:0;font-weight:400;">네이버 검색 없이 수기로 입력</label>
+      <div class="right">
+        <div class="card">
+          <h3>최근 등록 현황</h3>
+          <div class="table-scroll" id="listArea">불러오는 중</div>
+        </div>
       </div>
-
-      <div id="naverSearchBox">
-        <label>상호 검색 (네이버)</label>
-        <input type="text" id="naverQuery" placeholder="업체명 또는 주소로 검색" />
-        <div id="naverResults" class="search-results" style="display:none;"></div>
-      </div>
-
-      <label>상호</label>
-      <input type="text" id="businessName" />
-
-      <label>주소</label>
-      <input type="text" id="address" />
-
-      <label>전화번호(대표번호)</label>
-      <input type="text" id="phone" />
-
-      <label>상품 <span class="hint">(취급 품목/업종)</span></label>
-      <input type="text" id="category" />
-
-      <label>기타사항 <span class="hint">(수기 메모)</span></label>
-      <textarea id="memo" placeholder="고객 특징, 관련자 정보 등"></textarea>
-
-      <div style="margin-top:18px; display:flex; gap:8px;">
-        <button class="primary" id="saveBtn">저장</button>
-        <button class="ghost" id="resetBtn">초기화</button>
-      </div>
-
-      <div id="saveStatus"></div>
-    </div>
-
-    <div class="card">
-      <h3>최근 등록 현황</h3>
-      <div id="listArea">불러오는 중</div>
     </div>
   </div>
 
@@ -570,7 +590,7 @@
         .from("business_sites_view")
         .select("*")
         .order("created_at", { ascending: false })
-        .limit(20);
+        .limit(30);
 
       if (error) {
         el("listArea").innerHTML = `조회 실패: ${error.message}`;
@@ -583,19 +603,25 @@
       el("listArea").innerHTML = `
         <table>
           <thead>
-            <tr><th>고객번호</th><th>성명</th><th>상호</th><th>주소</th><th>전화</th><th>조합원</th><th>등록자</th><th></th></tr>
+            <tr>
+              <th>고객번호</th><th>성명</th><th>휴대폰</th><th>상호</th><th>주소</th>
+              <th>전화</th><th>상품</th><th>사업자번호</th><th>조합원</th><th>등록자</th><th></th>
+            </tr>
           </thead>
           <tbody>
             ${data.map(r => `
               <tr>
                 <td>${r.customer_id}</td>
                 <td>${r.customer_name || "-"}</td>
+                <td>${r.customer_mobile || ""}</td>
                 <td>${r.business_name}</td>
                 <td>${r.address || ""}</td>
                 <td>${r.phone || ""}</td>
+                <td>${r.category || ""}</td>
+                <td>${r.business_reg_no || ""}</td>
                 <td><span class="badge ${r.is_member ? "member" : "nonmember"}">${r.is_member ? "조합원" : "비조합원"}</span></td>
                 <td>${r.created_by || ""}</td>
-                <td><button class="ghost delete-btn" data-id="${r.id}" style="color:var(--warn);">삭제</button></td>
+                <td class="del-cell"><button class="ghost delete-btn" data-id="${r.id}" style="color:var(--warn);">삭제</button></td>
               </tr>
             `).join("")}
           </tbody>
