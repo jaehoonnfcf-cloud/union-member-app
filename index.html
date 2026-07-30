@@ -41,6 +41,7 @@
     box-shadow: var(--shadow);
     padding: 24px;
     margin-bottom: 20px;
+    transition: box-shadow .15s ease;
   }
   .card h3 {
     margin: 0 0 16px;
@@ -236,7 +237,10 @@
             <div id="naverResults" class="search-results" style="display:none;"></div>
           </div>
 
-          <label>상호</label>
+          <label style="display:flex; align-items:center; justify-content:space-between;">
+            <span>상호</span>
+            <a id="naverPlaceLink" href="#" target="_blank" rel="noopener" style="display:none; font-size:11.5px; font-weight:600; color:var(--accent); text-decoration:none;">네이버 플레이스 보기 ↗</a>
+          </label>
           <input type="text" id="businessName" />
 
           <label>주소</label>
@@ -481,6 +485,14 @@
           el("category").value = item.category || "";
           box.style.display = "none";
           el("naverQuery").value = item.title;
+
+          const linkEl = el("naverPlaceLink");
+          if (item.link) {
+            linkEl.href = item.link;
+            linkEl.style.display = "inline";
+          } else {
+            linkEl.style.display = "none";
+          }
         });
       });
     }
@@ -620,6 +632,7 @@
       el("customerName").readOnly = false;
       el("mobilePhone").readOnly = false;
       el("memberCheckStatus").innerHTML = "";
+      el("naverPlaceLink").style.display = "none";
     }
 
     el("resetBtn").addEventListener("click", () => {
@@ -661,7 +674,7 @@
                 <td>${r.customer_id}</td>
                 <td>${r.customer_name || "-"}</td>
                 <td>${r.customer_mobile || ""}</td>
-                <td>${r.business_name}</td>
+                <td>${r.business_name}${r.naver_place_url ? ` <a href="${r.naver_place_url}" target="_blank" rel="noopener" style="color:var(--accent); text-decoration:none; font-size:11px;" title="네이버 플레이스 보기">↗</a>` : ""}</td>
                 <td>${r.address || ""}</td>
                 <td>${r.phone || ""}</td>
                 <td>${r.category || ""}</td>
@@ -719,6 +732,14 @@
 
       el("manualToggle").checked = true;
       el("naverSearchBox").style.display = "none";
+
+      const linkEl = el("naverPlaceLink");
+      if (record.naver_place_url) {
+        linkEl.href = record.naver_place_url;
+        linkEl.style.display = "inline";
+      } else {
+        linkEl.style.display = "none";
+      }
 
       el("editingBanner").style.display = "block";
       el("editingBanner").textContent = `"${record.business_name}" 수정 중 — 저장을 누르면 이 건이 수정됩니다.`;
