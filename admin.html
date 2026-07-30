@@ -216,7 +216,7 @@
       });
     });
 
-    el("filterBtn").addEventListener("click", loadHistory);
+    // filterBtn 클릭시 동작은 아래 페이지네이션 로직에서 처리 (1페이지로 리셋 후 조회)
 
     function renderDiff(action, changed) {
       // INSERT/DELETE는 전체 레코드가 통째로 로그에 남아 너무 길어지므로 요약만 표시
@@ -231,13 +231,24 @@
       }).join("");
     }
 
+    let historyPage = 0;
+    const HISTORY_PAGE_SIZE = 50;
+
+    el("filterBtn").addEventListener("click", () => {
+      historyPage = 0;
+      loadHistory();
+    });
+
     async function loadHistory() {
       el("historyList").innerHTML = "불러오는 중";
+      const from = historyPage * HISTORY_PAGE_SIZE;
+      const to = from + HISTORY_PAGE_SIZE - 1;
+
       let query = supabaseClient
         .from("audit_logs_view")
-        .select("*")
+        .select("*", { count: "exact" })
         .order("created_at", { ascending: false })
-        .limit(100);
+        .range(from, to);
 
       const actor = el("filterActor").value.trim();
       const biz = el("filterBusiness").value.trim();
@@ -247,7 +258,7 @@
       if (biz) query = query.ilike("business_name", `%${biz}%`);
       if (action) query = query.eq("action", action);
 
-      const { data, error } = await query;
+      const { data, error, count } = await query;
       if (error) {
         el("historyList").innerHTML = `조회 실패: ${error.message}`;
         return;
@@ -256,6 +267,7 @@
         el("historyList").innerHTML = "이력이 없습니다.";
         return;
       }
+      const totalPages = Math.max(1, Math.ceil((count || 0) / HISTORY_PAGE_SIZE));
       el("historyList").innerHTML = `
         <table>
           <thead>
@@ -274,6 +286,17 @@
             `).join("")}
           </tbody>
         </table>
+        <div style="display:flex; align-items:center; justify-content:center; gap:12px; margin-top:16px;">
+          <button id="historyPrevBtn" ${historyPage === 0 ? "disabled" : ""}>이전</button>
+          <span style="font-size:13px; color:var(--muted);">${historyPage + 1} / ${totalPages} 페이지 (총 ${count || 0}건)</span>
+          <button id="historyNextBtn" ${historyPage + 1 >= totalPages ? "disabled" : ""}>다음</button>
+        </div>
+      `;
+
+      const prevBtn = document.getElementById("historyPrevBtn");
+      const nextBtn = document.getElementById("historyNextBtn");
+      if (prevBtn) prevBtn.addEventListener("click", () => { historyPage--; loadHistory(); });
+      if (nextBtn) nextBtn.addEventListener("click", () => { historyPage++; loadHistory(); });
       `;
     }
 
