@@ -251,6 +251,8 @@
           <label>기타사항 <span class="hint">(수기 메모)</span></label>
           <textarea id="memo" placeholder="고객 특징, 관련자 정보 등"></textarea>
 
+      <div id="editingBanner" class="banner info" style="display:none;"></div>
+
           <div style="margin-top:18px; display:flex; gap:8px;">
             <button class="primary" id="saveBtn">저장</button>
             <button class="ghost" id="resetBtn">초기화</button>
@@ -514,7 +516,7 @@
       const dupKey = normalizeKey(businessName, address);
       const naverPlaceUrl = selectedNaverItem ? selectedNaverItem.link : null;
 
-      if (!force) {
+      if (!force && !editingId) {
         const { data: dups, error } = await supabaseClient.rpc("check_duplicate_business", {
           p_customer_id: customerId,
           p_phone: phone || null,
@@ -528,7 +530,7 @@
         if (dups && dups.length > 0) {
           const d = dups[0];
           showSaveStatus(
-            `이미 등록된 사업장일 수 있습니다.\n기존 상호: ${d.business_name} · 고객번호: ${d.customer_id} · 등록자: ${d.created_by}\n` +
+            `이미 등록된 사업장일 수 있습니다.\n기존 상호: ${d.business_name} · 고객번호: ${d.customer_id} · 등록자: ${d.created_by_display}\n` +
             `다른 업체가 맞다면 아래 버튼으로 등록을 계속할 수 있습니다.`,
             "warn",
             true
@@ -543,6 +545,31 @@
         name: el("customerName").value.trim() || null,
         mobile_phone: el("mobilePhone").value.trim() || null
       }, { onConflict: "customer_id", ignoreDuplicates: true });
+
+      if (editingId) {
+        const { error: updateError } = await supabaseClient.from("business_sites").update({
+          customer_id: customerId,
+          business_name: businessName,
+          address: address,
+          phone: phone,
+          category: category,
+          business_reg_no: bizRegNo || null,
+          duplicate_check_key: dupKey,
+          memo: memo,
+          updated_by: currentUserEmail
+        }).eq("id", editingId);
+
+        if (updateError) {
+          showSaveStatus("수정 실패: " + updateError.message, "warn");
+          return;
+        }
+
+        showSaveStatus("수정되었습니다.", "ok");
+        stopEdit();
+        clearForm();
+        loadRecentList();
+        return;
+      }
 
       const { error: insertError } = await supabaseClient.from("business_sites").insert({
         customer_id: customerId,
@@ -596,9 +623,13 @@
     }
 
     el("resetBtn").addEventListener("click", () => {
+      stopEdit();
       clearForm();
       el("saveStatus").innerHTML = "";
     });
+
+    let lastListData = [];
+    let editingId = null;
 
     async function loadRecentList() {
       const { data, error } = await supabaseClient
@@ -615,6 +646,7 @@
         el("listArea").innerHTML = `등록된 사업장이 없습니다.`;
         return;
       }
+      lastListData = data;
       el("listArea").innerHTML = `
         <table>
           <thead>
@@ -636,7 +668,10 @@
                 <td>${r.business_reg_no || ""}</td>
                 <td><span class="badge ${r.is_member ? "member" : "nonmember"}">${r.is_member ? "조합원" : "비조합원"}</span></td>
                 <td>${r.created_by_display || ""}</td>
-                <td class="del-cell"><button class="ghost delete-btn" data-id="${r.id}" style="color:var(--warn);">삭제</button></td>
+                <td class="del-cell">
+                  <button class="ghost edit-btn" data-id="${r.id}">수정</button>
+                  <button class="ghost delete-btn" data-id="${r.id}" style="color:var(--warn);">삭제</button>
+                </td>
               </tr>
             `).join("")}
           </tbody>
@@ -654,6 +689,51 @@
           loadRecentList();
         });
       });
+
+      document.querySelectorAll(".edit-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const record = lastListData.find(r => r.id === btn.dataset.id);
+          if (!record) return;
+          startEdit(record);
+        });
+      });
+    }
+
+    function startEdit(record) {
+      editingId = record.id;
+      selectedNaverItem = null;
+
+      el("customerId").value = record.customer_id || "";
+      el("customerName").value = record.customer_name || "";
+      el("mobilePhone").value = record.customer_mobile || "";
+      el("bizRegNo").value = record.business_reg_no || "";
+      el("businessName").value = record.business_name || "";
+      el("address").value = record.address || "";
+      el("phone").value = record.phone || "";
+      el("category").value = record.category || "";
+      el("memo").value = record.memo || "";
+
+      el("customerName").readOnly = false;
+      el("mobilePhone").readOnly = false;
+      el("memberCheckStatus").innerHTML = "";
+
+      el("manualToggle").checked = true;
+      el("naverSearchBox").style.display = "none";
+
+      el("editingBanner").style.display = "block";
+      el("editingBanner").textContent = `"${record.business_name}" 수정 중 — 저장을 누르면 이 건이 수정됩니다.`;
+      el("saveBtn").textContent = "수정 저장";
+      el("resetBtn").textContent = "수정 취소";
+      el("saveStatus").innerHTML = "";
+
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function stopEdit() {
+      editingId = null;
+      el("editingBanner").style.display = "none";
+      el("saveBtn").textContent = "저장";
+      el("resetBtn").textContent = "초기화";
     }
   </script>
 </body>
