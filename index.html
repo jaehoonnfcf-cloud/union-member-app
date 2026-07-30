@@ -938,27 +938,33 @@
     let editingId = null;
     let listFilterMode = "all";
     let listSearchDebounce = null;
+    let listPage = 0;
+    const LIST_PAGE_SIZE = 50;
 
     document.querySelectorAll(".list-filter-btn").forEach(btn => {
       btn.addEventListener("click", () => {
         listFilterMode = btn.dataset.mode;
         document.querySelectorAll(".list-filter-btn").forEach(b => b.classList.remove("active"));
         btn.classList.add("active");
+        listPage = 0;
         loadRecentList();
       });
     });
 
     el("listSearch").addEventListener("input", () => {
       clearTimeout(listSearchDebounce);
-      listSearchDebounce = setTimeout(() => loadRecentList(), 300);
+      listSearchDebounce = setTimeout(() => { listPage = 0; loadRecentList(); }, 300);
     });
 
     async function loadRecentList() {
+      const from = listPage * LIST_PAGE_SIZE;
+      const to = from + LIST_PAGE_SIZE - 1;
+
       let query = supabaseClient
         .from("business_sites_view")
-        .select("*")
+        .select("*", { count: "exact" })
         .order("created_at", { ascending: false })
-        .limit(1000);
+        .range(from, to);
 
       if (listFilterMode === "mine" && currentUserEmail) {
         query = query.eq("created_by", currentUserEmail);
@@ -971,7 +977,7 @@
         );
       }
 
-      const { data, error } = await query;
+      const { data, error, count } = await query;
 
       if (error) {
         el("listArea").innerHTML = `조회 실패: ${error.message}`;
@@ -1023,7 +1029,17 @@
             `).join("")}
           </tbody>
         </table>
+        <div style="display:flex; align-items:center; justify-content:center; gap:12px; margin-top:16px;">
+          <button id="listPrevBtn" ${listPage === 0 ? "disabled" : ""}>이전</button>
+          <span style="font-size:13px; color:var(--muted);">${listPage + 1} / ${Math.max(1, Math.ceil((count || 0) / LIST_PAGE_SIZE))} 페이지 (총 ${count || 0}건)</span>
+          <button id="listNextBtn" ${listPage + 1 >= Math.ceil((count || 0) / LIST_PAGE_SIZE) ? "disabled" : ""}>다음</button>
+        </div>
       `;
+
+      const prevBtn = document.getElementById("listPrevBtn");
+      const nextBtn = document.getElementById("listNextBtn");
+      if (prevBtn) prevBtn.addEventListener("click", () => { listPage--; loadRecentList(); });
+      if (nextBtn) nextBtn.addEventListener("click", () => { listPage++; loadRecentList(); });
 
       document.querySelectorAll(".delete-btn").forEach(btn => {
         btn.addEventListener("click", async () => {
