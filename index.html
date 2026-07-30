@@ -157,6 +157,50 @@
   }
   .lookup-divider::before { left: 0; }
   .lookup-divider::after { right: 0; }
+
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(24,24,27,0.45);
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 10vh;
+    z-index: 100;
+  }
+  .modal-box {
+    background: var(--surface);
+    border-radius: 10px;
+    width: 92%;
+    max-width: 480px;
+    max-height: 70vh;
+    padding: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+    display: flex;
+    flex-direction: column;
+  }
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .modal-results {
+    margin-top: 12px;
+    overflow-y: auto;
+    font-size: 13px;
+  }
+  .modal-result-item {
+    padding: 10px 8px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .modal-result-item:hover { background: var(--accent-light); }
+  .modal-result-item b { font-weight: 700; }
+  .modal-result-item .meta { color: var(--muted); font-size: 12px; }
   .banner {
     padding: 12px 14px;
     border-radius: 6px;
@@ -281,7 +325,10 @@
     <div class="layout">
       <div class="left">
         <div class="card">
-          <h3>사업장 등록</h3>
+          <h3 style="display:flex; align-items:center; justify-content:space-between;">
+            <span>사업장 등록</span>
+            <button class="ghost" id="openMemberSearchBtn" style="font-size:12px; padding:6px 10px; border:1px solid var(--border-strong);">조합원 검색 (팝업)</button>
+          </h3>
 
           <div class="lookup-box">
             <div class="lookup-title">
@@ -364,6 +411,17 @@
           <div class="table-scroll" id="listArea">불러오는 중</div>
         </div>
       </div>
+    </div>
+  </div>
+
+  <div id="memberSearchModal" class="modal-overlay" style="display:none;">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 style="margin:0; border:none; padding:0;">조합원 검색</h3>
+        <button class="ghost" id="closeMemberSearchBtn" style="padding:4px 10px;">닫기</button>
+      </div>
+      <input type="text" id="memberSearchInput" placeholder="성명 또는 휴대폰번호로 검색" autocomplete="off" />
+      <div id="memberSearchResults" class="modal-results">검색어를 입력해주세요.</div>
     </div>
   </div>
 
@@ -562,6 +620,67 @@
           el("mobilePhone").readOnly = false;
         });
       }
+    }
+
+    // ---------- 조합원 검색 팝업 ----------
+    el("openMemberSearchBtn").addEventListener("click", () => {
+      el("memberSearchModal").style.display = "flex";
+      el("memberSearchInput").value = "";
+      el("memberSearchResults").innerHTML = "검색어를 입력해주세요.";
+      el("memberSearchInput").focus();
+    });
+
+    el("closeMemberSearchBtn").addEventListener("click", () => {
+      el("memberSearchModal").style.display = "none";
+    });
+
+    el("memberSearchModal").addEventListener("click", (e) => {
+      if (e.target.id === "memberSearchModal") el("memberSearchModal").style.display = "none";
+    });
+
+    let memberSearchDebounce = null;
+    el("memberSearchInput").addEventListener("input", (e) => {
+      clearTimeout(memberSearchDebounce);
+      const q = e.target.value.trim();
+      if (q.length < 2) {
+        el("memberSearchResults").innerHTML = "검색어를 2글자 이상 입력해주세요.";
+        return;
+      }
+      memberSearchDebounce = setTimeout(() => searchMembers(q), 300);
+    });
+
+    async function searchMembers(q) {
+      el("memberSearchResults").innerHTML = "검색 중...";
+      const { data, error } = await supabaseClient
+        .from("customers")
+        .select("customer_id, name, mobile_phone, is_member")
+        .eq("is_member", true)
+        .or(`name.ilike.%${q}%,mobile_phone.ilike.%${q}%`)
+        .order("name")
+        .limit(30);
+
+      if (error) {
+        el("memberSearchResults").innerHTML = `조회 실패: ${error.message}`;
+        return;
+      }
+      if (!data || data.length === 0) {
+        el("memberSearchResults").innerHTML = "검색 결과가 없습니다.";
+        return;
+      }
+      el("memberSearchResults").innerHTML = data.map(m => `
+        <div class="modal-result-item" data-id="${m.customer_id}">
+          <div><b>${m.name || "(이름 없음)"}</b> <span class="meta">${m.customer_id}</span></div>
+          <div class="meta">${m.mobile_phone || ""}</div>
+        </div>
+      `).join("");
+
+      document.querySelectorAll(".modal-result-item").forEach(item => {
+        item.addEventListener("click", () => {
+          const match = data.find(m => m.customer_id === item.dataset.id);
+          applyMobileMatch(match);
+          el("memberSearchModal").style.display = "none";
+        });
+      });
     }
 
     el("bizRegNo").addEventListener("input", (e) => {
