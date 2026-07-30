@@ -134,6 +134,7 @@
     <div id="tab-users" class="card" style="display:none;">
       <div class="add-row">
         <input type="text" id="newUserEmail" placeholder="추가할 구글 이메일" />
+        <input type="text" id="newUserName" placeholder="이름" style="flex:0 0 120px;" />
         <select id="newUserRole">
           <option value="user">user</option>
           <option value="admin">admin</option>
@@ -260,7 +261,7 @@
                 <td><span class="badge ${r.action.toLowerCase().includes('delete') ? 'delete' : r.action.toLowerCase().includes('update') ? 'update' : r.action.toLowerCase().includes('force') ? 'force' : 'insert'}">${r.action}</span></td>
                 <td>${r.business_name || "-"}</td>
                 <td>${r.customer_id || "-"}</td>
-                <td>${r.actor_email || "-"}</td>
+                <td>${r.actor_display || "-"}</td>
                 <td style="max-width:280px;">${renderDiff(r.changed_fields)}</td>
               </tr>
             `).join("")}
@@ -271,15 +272,17 @@
 
     el("addUserBtn").addEventListener("click", async () => {
       const email = el("newUserEmail").value.trim();
+      const name = el("newUserName").value.trim();
       const role = el("newUserRole").value;
       if (!email) return;
-      const { error } = await supabaseClient.from("allowed_users").insert({ email, role });
+      const { error } = await supabaseClient.from("allowed_users").insert({ email, name: name || null, role });
       if (error) {
         el("userStatus").innerHTML = `<p class="status-msg warn">추가 실패: ${error.message}</p>`;
         return;
       }
       el("newUserEmail").value = "";
-      el("userStatus").innerHTML = `<p class="status-msg ok">${email} 추가됨</p>`;
+      el("newUserName").value = "";
+      el("userStatus").innerHTML = `<p class="status-msg ok">${name || email} 추가됨</p>`;
       loadUsers();
     });
 
@@ -295,11 +298,12 @@
       }
       el("userList").innerHTML = `
         <table>
-          <thead><tr><th>이메일</th><th>권한</th><th>등록일</th><th></th></tr></thead>
+          <thead><tr><th>이메일</th><th>이름</th><th>권한</th><th>등록일</th><th></th></tr></thead>
           <tbody>
             ${data.map(u => `
               <tr>
                 <td>${u.email}</td>
+                <td><input type="text" class="nameEdit" data-email="${u.email}" value="${u.name || ""}" style="width:100px; padding:4px 6px; border:1px solid var(--border-strong); border-radius:4px; font-size:13px;" /></td>
                 <td>
                   <select data-email="${u.email}" class="roleSelect">
                     <option value="user" ${u.role === "user" ? "selected" : ""}>user</option>
@@ -313,6 +317,17 @@
           </tbody>
         </table>
       `;
+
+      document.querySelectorAll(".nameEdit").forEach(inp => {
+        inp.addEventListener("change", async () => {
+          const email = inp.dataset.email;
+          const { error } = await supabaseClient
+            .from("allowed_users")
+            .update({ name: inp.value.trim() || null })
+            .eq("email", email);
+          if (error) alert("이름 변경 실패: " + error.message);
+        });
+      });
 
       document.querySelectorAll(".roleSelect").forEach(sel => {
         sel.addEventListener("change", async () => {
@@ -359,9 +374,14 @@
           let skipped = 0;
 
           for (const row of rows) {
-            const rawId = (row[0] || "").toString().trim();
+            let rawId = (row[0] || "").toString().trim();
             const name = (row[1] || "").toString().trim();
             const mobile = (row[2] || "").toString().trim();
+
+            // 엑셀에서 숫자로 저장되면 앞자리 0이 잘려나가는 경우가 있어 8자리로 보정
+            if (/^\d+$/.test(rawId) && rawId.length <= 8) {
+              rawId = rawId.padStart(8, "0");
+            }
 
             if (/^\d{8}$/.test(rawId)) {
               records.push({
