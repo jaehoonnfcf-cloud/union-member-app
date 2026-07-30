@@ -371,6 +371,7 @@
         complete: async (result) => {
           const rows = result.data;
           const records = [];
+          const skippedRows = [];
           let skipped = 0;
 
           for (const row of rows) {
@@ -393,6 +394,7 @@
               });
             } else {
               skipped++;
+              skippedRows.push(`[${row[0] || ""}, ${row[1] || ""}, ${row[2] || ""}]`);
             }
           }
 
@@ -401,24 +403,26 @@
             return;
           }
 
-          // 1) 기존 조합원 표시를 전부 해제 (사업장 데이터는 그대로 유지, 조합원 여부만 초기화)
-          const { error: resetError } = await supabaseClient
-            .from("customers")
-            .update({ is_member: false })
-            .eq("is_member", true);
-
-          if (resetError) {
-            el("csvStatus").innerHTML = `<p class="status-msg warn">기존 명단 초기화 실패: ${resetError.message}</p>`;
-            return;
-          }
-
-          // 2) 새 명단 업로드 (조합원으로 등록)
+          // 1) 새 명단을 먼저 반영 (조합원으로 등록/갱신)
           const { error } = await supabaseClient
             .from("customers")
             .upsert(records, { onConflict: "customer_id" });
 
           if (error) {
             el("csvStatus").innerHTML = `<p class="status-msg warn">업로드 실패: ${error.message}</p>`;
+            return;
+          }
+
+          // 2) 이번 파일에 없는 기존 조합원만 해제 (실패해도 방금 올린 명단은 이미 반영된 상태라 안전)
+          const uploadedIds = records.map(r => r.customer_id);
+          const { error: resetError } = await supabaseClient
+            .from("customers")
+            .update({ is_member: false })
+            .eq("is_member", true)
+            .not("customer_id", "in", `(${uploadedIds.map(id => `"${id}"`).join(",")})`);
+
+          if (resetError) {
+            el("csvStatus").innerHTML = `<p class="status-msg warn">신규 명단은 반영됐지만, 기존 명단 해제 중 오류: ${resetError.message}</p>`;
             return;
           }
 
@@ -429,7 +433,15 @@
             row_count: records.length
           });
 
-          el("csvStatus").innerHTML = `<p class="status-msg ok">${records.length}건 등록 완료 (건너뜀 ${skipped}건) — 이 파일 기준으로 조합원 명단이 갱신되었습니다.</p>`;
+          el("csvStatus").innerHTML = `
+            <p class="status-msg ok">${records.length}건 등록 완료 (건너뜀 ${skipped}건) — 이 파일 기준으로 조합원 명단이 갱신되었습니다.</p>
+            ${skippedRows.length > 0 ? `
+              <details style="margin-top:8px; font-size:12.5px; color:var(--warn);">
+                <summary style="cursor:pointer;">건너뛴 행 상세 보기 (${skippedRows.length}건)</summary>
+                <div style="margin-top:6px; white-space:pre-wrap; font-family:monospace; background:#fbf0e6; padding:8px; border-radius:6px;">${skippedRows.join("\n")}</div>
+              </details>
+            ` : ""}
+          `;
           el("csvFile").value = "";
           loadMembers();
           loadUploadLogs();
