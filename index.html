@@ -184,6 +184,11 @@
   }
   .layout .right .card { position: sticky; top: 20px; }
   .del-cell { text-align: center; min-width: 64px; }
+  .list-filter-btn.active {
+    background: var(--accent-light);
+    color: var(--accent-dark);
+    font-weight: 700;
+  }
 </style>
 </head>
 <body>
@@ -268,7 +273,14 @@
 
       <div class="right">
         <div class="card">
-          <h3>최근 등록 현황</h3>
+          <h3 style="display:flex; align-items:center; justify-content:space-between; border-bottom:none; margin-bottom:10px; padding-bottom:0;">
+            <span>최근 등록 현황</span>
+            <span style="display:flex; gap:4px;">
+              <button class="ghost list-filter-btn active" data-mode="all" style="padding:5px 12px; font-size:12px;">전체</button>
+              <button class="ghost list-filter-btn" data-mode="mine" style="padding:5px 12px; font-size:12px;">내 등록만</button>
+            </span>
+          </h3>
+          <div style="border-bottom:1px solid var(--border); margin-bottom:16px;"></div>
           <div class="table-scroll" id="listArea">불러오는 중</div>
         </div>
       </div>
@@ -643,13 +655,29 @@
 
     let lastListData = [];
     let editingId = null;
+    let listFilterMode = "all";
+
+    document.querySelectorAll(".list-filter-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        listFilterMode = btn.dataset.mode;
+        document.querySelectorAll(".list-filter-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        loadRecentList();
+      });
+    });
 
     async function loadRecentList() {
-      const { data, error } = await supabaseClient
+      let query = supabaseClient
         .from("business_sites_view")
         .select("*")
         .order("created_at", { ascending: false })
         .limit(30);
+
+      if (listFilterMode === "mine" && currentUserEmail) {
+        query = query.eq("created_by", currentUserEmail);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         el("listArea").innerHTML = `조회 실패: ${error.message}`;
