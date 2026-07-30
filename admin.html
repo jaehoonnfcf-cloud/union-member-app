@@ -3,85 +3,110 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>관리자 페이지 - 조합원 사업장관리</title>
+<title>관리자 페이지 · 조합원 사업장관리</title>
 <style>
   :root {
-    --accent: #2f6f4f;
-    --accent-light: #e8f3ec;
-    --warn: #b4531f;
-    --warn-light: #fdece1;
-    --border: #ddd;
-    --text: #222;
-    --muted: #777;
+    --bg: #fafafa;
+    --surface: #ffffff;
+    --border: #e3e3e6;
+    --border-strong: #d4d4d8;
+    --text: #18181b;
+    --muted: #71717a;
+    --accent: #1f5c4a;
+    --accent-light: #e9f2ee;
+    --accent-dark: #164536;
+    --warn: #9a5b2e;
+    --warn-light: #fbf0e6;
+    --danger: #9c3b3b;
+    --danger-light: #faeaea;
+    --radius: 8px;
+    --shadow: 0 1px 2px rgba(0,0,0,0.04);
   }
   * { box-sizing: border-box; }
   body {
-    font-family: -apple-system, "Malgun Gothic", sans-serif;
-    max-width: 900px;
-    margin: 40px auto;
-    padding: 0 16px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Malgun Gothic", sans-serif;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 48px 20px 80px;
+    background: var(--bg);
     color: var(--text);
-    line-height: 1.5;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
   }
-  h1 { font-size: 20px; margin-bottom: 4px; }
-  .sub { color: var(--muted); font-size: 13px; margin-bottom: 20px; }
-  a.back { font-size: 13px; color: var(--accent); text-decoration: none; }
-  .tabs { display: flex; gap: 8px; margin: 20px 0; border-bottom: 1px solid var(--border); }
+  h1 { font-size: 21px; font-weight: 700; letter-spacing: -0.01em; margin: 0 0 4px; }
+  .sub { color: var(--muted); font-size: 13px; margin: 0 0 20px; }
+  a.back { font-size: 12.5px; color: var(--accent); text-decoration: none; font-weight: 600; }
+  a.back:hover { text-decoration: underline; }
+  .tabs { display: flex; gap: 4px; margin: 24px 0 0; border-bottom: 1px solid var(--border); }
   .tab {
     padding: 10px 16px;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 13.5px;
+    font-weight: 600;
     color: var(--muted);
     border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
   }
-  .tab.active { color: var(--accent); border-color: var(--accent); font-weight: 600; }
+  .tab.active { color: var(--accent); border-color: var(--accent); }
   .card {
+    background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 20px;
-    margin-bottom: 20px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 22px;
+    margin: 20px 0;
   }
-  .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
   .filters input, .filters select {
-    padding: 7px 10px;
-    border: 1px solid var(--border);
+    padding: 8px 10px;
+    border: 1px solid var(--border-strong);
     border-radius: 6px;
     font-size: 13px;
   }
   button {
     padding: 8px 14px;
     font-size: 13px;
+    font-weight: 600;
     border-radius: 6px;
-    border: 1px solid var(--border);
-    background: white;
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    color: var(--text);
     cursor: pointer;
   }
-  button.primary { background: var(--accent); color: white; border-color: var(--accent); }
-  button.danger { background: var(--warn-light); color: var(--warn); border-color: var(--warn-light); }
+  button:hover { background: #f4f4f5; }
+  button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  button.primary:hover { background: var(--accent-dark); }
+  button.danger { background: var(--danger-light); color: var(--danger); border-color: #f0d6d6; }
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th, td { padding: 8px 6px; border-bottom: 1px solid #eee; text-align: left; vertical-align: top; }
-  th { color: var(--muted); font-weight: 600; font-size: 12px; }
-  .badge { display: inline-block; padding: 2px 8px; border-radius: 100px; font-size: 11px; }
-  .badge.insert { background: var(--accent-light); color: var(--accent); }
-  .badge.update { background: #fff6e0; color: #a06b00; }
-  .badge.delete { background: var(--warn-light); color: var(--warn); }
-  .badge.force { background: #fdeaea; color: #b00020; }
+  th, td { padding: 9px 8px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.02em; }
+  tbody tr:hover { background: #fafafa; }
+  .badge { display: inline-block; padding: 2px 9px; border-radius: 100px; font-size: 11px; font-weight: 600; }
+  .badge.insert { background: var(--accent-light); color: var(--accent-dark); }
+  .badge.update { background: #fdf3e0; color: #8a5a00; }
+  .badge.delete { background: var(--danger-light); color: var(--danger); }
+  .badge.force { background: var(--danger-light); color: var(--danger); }
   .diff-key { font-weight: 600; }
-  .diff-old { color: var(--warn); text-decoration: line-through; }
-  .diff-new { color: var(--accent); }
-  #blocked { text-align: center; padding: 80px 0; color: var(--warn); }
-  .add-row { display: flex; gap: 8px; margin-bottom: 14px; }
-  .add-row input { flex: 1; }
+  .diff-old { color: var(--danger); text-decoration: line-through; }
+  .diff-new { color: var(--accent-dark); }
+  #blocked { text-align: center; padding: 100px 0; color: var(--muted); font-size: 14px; }
+  .add-row { display: flex; gap: 8px; margin-bottom: 16px; }
+  .add-row input { flex: 1; padding: 8px 10px; border: 1px solid var(--border-strong); border-radius: 6px; font-size: 13px; }
+  select { padding: 8px 10px; border: 1px solid var(--border-strong); border-radius: 6px; font-size: 13px; }
+  .note { font-size: 12.5px; color: var(--muted); margin: 0 0 16px; }
+  .status-msg { font-size: 13px; margin-bottom: 12px; }
+  .status-msg.ok { color: var(--accent-dark); }
+  .status-msg.warn { color: var(--danger); }
 </style>
 </head>
 <body>
 
   <a class="back" href="index.html">← 입력 페이지로</a>
   <h1>관리자 페이지</h1>
-  <p class="sub">등록/수정 이력과 접근 허용 사용자를 관리합니다.</p>
+  <p class="sub">등록/수정 이력, 접근 사용자, 조합원명단을 관리합니다.</p>
 
   <div id="blocked" style="display:none;">
-    ⚠️ 관리자 권한이 없어 접근할 수 없습니다.
+    관리자 권한이 없어 접근할 수 없습니다.
   </div>
 
   <div id="adminArea" style="display:none;">
@@ -91,7 +116,6 @@
       <div class="tab" data-tab="members">조합원명단</div>
     </div>
 
-    <!-- 이력관리 탭 -->
     <div id="tab-history" class="card">
       <div class="filters">
         <input type="text" id="filterActor" placeholder="등록자 이메일" />
@@ -104,10 +128,9 @@
         </select>
         <button id="filterBtn">조회</button>
       </div>
-      <div id="historyList">불러오는 중...</div>
+      <div id="historyList">불러오는 중</div>
     </div>
 
-    <!-- 사용자관리 탭 -->
     <div id="tab-users" class="card" style="display:none;">
       <div class="add-row">
         <input type="text" id="newUserEmail" placeholder="추가할 구글 이메일" />
@@ -118,14 +141,13 @@
         <button class="primary" id="addUserBtn">추가</button>
       </div>
       <div id="userStatus"></div>
-      <div id="userList">불러오는 중...</div>
+      <div id="userList">불러오는 중</div>
     </div>
 
-    <!-- 조합원명단 탭 -->
     <div id="tab-members" class="card" style="display:none;">
-      <p style="font-size:13px; color:var(--muted); margin-top:0;">
-        CSV 파일 형식: 첫 번째 열 = 고객번호(8자리 숫자), 두 번째 열 = 성명.<br/>
-        헤더(제목) 행이 있어도 자동으로 구분해서 건너뜁니다. 업로드된 고객번호는 모두 "조합원"으로 등록됩니다.
+      <p class="note">
+        CSV 형식: 1열 = 고객번호(8자리 숫자), 2열 = 성명, 3열 = 휴대폰번호.<br/>
+        헤더 행이 있어도 자동으로 구분해서 건너뜁니다. 업로드된 고객번호는 모두 조합원으로 등록됩니다.
       </p>
       <div class="add-row">
         <input type="file" id="csvFile" accept=".csv" />
@@ -133,12 +155,12 @@
       </div>
       <div id="csvStatus"></div>
 
-      <h4 style="margin-bottom:6px;">등록된 조합원 수: <span id="memberCount">-</span></h4>
+      <h4 style="margin:20px 0 10px; font-size:13px;">등록된 조합원 수: <span id="memberCount">-</span></h4>
       <div class="filters">
         <input type="text" id="memberSearch" placeholder="고객번호 또는 성명 검색" />
         <button id="memberSearchBtn">검색</button>
       </div>
-      <div id="memberList">불러오는 중...</div>
+      <div id="memberList">불러오는 중</div>
     </div>
   </div>
 
@@ -174,7 +196,6 @@
     }
     init();
 
-    // ---------- 탭 전환 ----------
     document.querySelectorAll(".tab").forEach(tab => {
       tab.addEventListener("click", () => {
         document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
@@ -186,7 +207,6 @@
       });
     });
 
-    // ---------- 이력관리 ----------
     el("filterBtn").addEventListener("click", loadHistory);
 
     function renderDiff(changed) {
@@ -200,7 +220,7 @@
     }
 
     async function loadHistory() {
-      el("historyList").innerHTML = "불러오는 중...";
+      el("historyList").innerHTML = "불러오는 중";
       let query = supabaseClient
         .from("audit_logs_view")
         .select("*")
@@ -245,18 +265,17 @@
       `;
     }
 
-    // ---------- 사용자관리 ----------
     el("addUserBtn").addEventListener("click", async () => {
       const email = el("newUserEmail").value.trim();
       const role = el("newUserRole").value;
       if (!email) return;
       const { error } = await supabaseClient.from("allowed_users").insert({ email, role });
       if (error) {
-        el("userStatus").innerHTML = `<p style="color:var(--warn);">추가 실패: ${error.message}</p>`;
+        el("userStatus").innerHTML = `<p class="status-msg warn">추가 실패: ${error.message}</p>`;
         return;
       }
       el("newUserEmail").value = "";
-      el("userStatus").innerHTML = `<p style="color:var(--accent);">✅ ${email} 추가됨</p>`;
+      el("userStatus").innerHTML = `<p class="status-msg ok">${email} 추가됨</p>`;
       loadUsers();
     });
 
@@ -319,14 +338,14 @@
         });
       });
     }
-    // ---------- 조합원명단 CSV 업로드 ----------
+
     el("uploadCsvBtn").addEventListener("click", () => {
       const file = el("csvFile").files[0];
       if (!file) {
-        el("csvStatus").innerHTML = `<p style="color:var(--warn);">파일을 선택해주세요.</p>`;
+        el("csvStatus").innerHTML = `<p class="status-msg warn">파일을 선택해주세요.</p>`;
         return;
       }
-      el("csvStatus").innerHTML = `업로드 중...`;
+      el("csvStatus").innerHTML = `업로드 중`;
 
       Papa.parse(file, {
         skipEmptyLines: true,
@@ -338,21 +357,23 @@
           for (const row of rows) {
             const rawId = (row[0] || "").toString().trim();
             const name = (row[1] || "").toString().trim();
+            const mobile = (row[2] || "").toString().trim();
 
             if (/^\d{8}$/.test(rawId)) {
               records.push({
                 customer_id: rawId,
                 is_temp_id: false,
                 is_member: true,
-                name: name || null
+                name: name || null,
+                mobile_phone: mobile || null
               });
             } else {
-              skipped++; // 헤더 행이거나 형식이 안 맞는 행
+              skipped++;
             }
           }
 
           if (records.length === 0) {
-            el("csvStatus").innerHTML = `<p style="color:var(--warn);">유효한 행이 없습니다. 첫 번째 열이 8자리 숫자 고객번호인지 확인해주세요.</p>`;
+            el("csvStatus").innerHTML = `<p class="status-msg warn">유효한 행이 없습니다. 첫 번째 열이 8자리 숫자 고객번호인지 확인해주세요.</p>`;
             return;
           }
 
@@ -361,11 +382,11 @@
             .upsert(records, { onConflict: "customer_id" });
 
           if (error) {
-            el("csvStatus").innerHTML = `<p style="color:var(--warn);">업로드 실패: ${error.message}</p>`;
+            el("csvStatus").innerHTML = `<p class="status-msg warn">업로드 실패: ${error.message}</p>`;
             return;
           }
 
-          el("csvStatus").innerHTML = `<p style="color:var(--accent);">✅ ${records.length}건 등록/갱신 완료 (건너뜀 ${skipped}건)</p>`;
+          el("csvStatus").innerHTML = `<p class="status-msg ok">${records.length}건 등록/갱신 완료 (건너뜀 ${skipped}건)</p>`;
           el("csvFile").value = "";
           loadMembers();
         }
@@ -375,7 +396,7 @@
     el("memberSearchBtn").addEventListener("click", loadMembers);
 
     async function loadMembers() {
-      el("memberList").innerHTML = "불러오는 중...";
+      el("memberList").innerHTML = "불러오는 중";
 
       const { count } = await supabaseClient
         .from("customers")
@@ -406,9 +427,9 @@
       }
       el("memberList").innerHTML = `
         <table>
-          <thead><tr><th>고객번호</th><th>성명</th></tr></thead>
+          <thead><tr><th>고객번호</th><th>성명</th><th>휴대폰번호</th></tr></thead>
           <tbody>
-            ${data.map(m => `<tr><td>${m.customer_id}</td><td>${m.name || "-"}</td></tr>`).join("")}
+            ${data.map(m => `<tr><td>${m.customer_id}</td><td>${m.name || "-"}</td><td>${m.mobile_phone || "-"}</td></tr>`).join("")}
           </tbody>
         </table>
       `;
