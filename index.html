@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css" />
 <title>조합원 사업장관리</title>
 <style>
   :root {
@@ -22,7 +23,7 @@
   }
   * { box-sizing: border-box; }
   body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Malgun Gothic", sans-serif;
+    font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", "Malgun Gothic", sans-serif;
     max-width: 1680px;
     width: 92%;
     margin: 0 auto;
@@ -154,24 +155,33 @@
     text-align: center;
     padding: 100px 0;
   }
-  .topbar {
+  .page-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 20px;
   }
-  .topbar .email { font-size: 12.5px; color: var(--muted); }
-  .topbar .actions { display: flex; gap: 14px; align-items: center; }
-  .topbar a {
+  .account-info {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    white-space: nowrap;
+    padding-top: 2px;
+  }
+  .account-info .email { font-size: 12.5px; color: var(--muted); }
+  .account-info a {
     font-size: 12.5px;
     color: var(--accent);
     text-decoration: none;
     font-weight: 600;
   }
-  .topbar a:hover { text-decoration: underline; }
+  .account-info a:hover { text-decoration: underline; }
+  .account-info button { padding: 5px 12px; font-size: 12px; }
 
   .layout {
     display: grid;
-    grid-template-columns: 380px minmax(0, 1fr);
+    grid-template-columns: 320px minmax(0, 1fr);
     gap: 20px;
     align-items: start;
   }
@@ -182,7 +192,7 @@
   .layout .right .card {
     min-width: 0;
   }
-  .layout .right .card { position: sticky; top: 20px; }
+  .layout .left .card { padding: 20px; position: sticky; top: 20px; }
   .del-cell { text-align: center; min-width: 64px; white-space: nowrap; }
   .icon-btn {
     display: inline-flex;
@@ -210,8 +220,17 @@
 </head>
 <body>
 
-  <h1>조합원 사업장관리</h1>
-  <p class="sub">사업장 정보를 등록하고 조합원 여부를 확인합니다.</p>
+  <div class="page-header">
+    <div>
+      <h1>조합원 사업장관리</h1>
+      <p class="sub">사업장 정보를 등록하고 조합원 여부를 확인합니다.</p>
+    </div>
+    <div class="account-info" id="accountInfo" style="display:none;">
+      <span class="email" id="userEmail"></span>
+      <a id="adminLink" href="admin.html" style="display:none;">관리자 페이지</a>
+      <button class="ghost" id="logoutBtn">로그아웃</button>
+    </div>
+  </div>
 
   <div id="loginArea">
     <button class="primary" id="loginBtn">Google 계정으로 로그인</button>
@@ -219,14 +238,6 @@
   </div>
 
   <div id="appArea">
-    <div class="card topbar">
-      <span class="email" id="userEmail"></span>
-      <div class="actions">
-        <a id="adminLink" href="admin.html" style="display:none;">관리자 페이지</a>
-        <button class="ghost" id="logoutBtn">로그아웃</button>
-      </div>
-    </div>
-
     <div class="layout">
       <div class="left">
         <div class="card">
@@ -343,6 +354,7 @@
       if (!session) {
         el("loginArea").style.display = "block";
         el("appArea").style.display = "none";
+        el("accountInfo").style.display = "none";
         return;
       }
       currentUserEmail = session.user.email;
@@ -350,6 +362,7 @@
       if (!allowed) {
         el("loginArea").style.display = "block";
         el("appArea").style.display = "none";
+        el("accountInfo").style.display = "none";
         el("loginStatus").className = "banner warn";
         el("loginStatus").textContent =
           `${currentUserEmail} 계정은 접근이 허용되지 않았습니다. 관리자에게 등록을 요청하세요.`;
@@ -357,6 +370,7 @@
       }
       el("loginArea").style.display = "none";
       el("appArea").style.display = "block";
+      el("accountInfo").style.display = "flex";
       el("userEmail").textContent = `${allowed.name || currentUserEmail} · ${allowed.role}`;
       if (allowed.role === "admin") {
         el("adminLink").style.display = "inline-block";
