@@ -147,13 +147,17 @@
     <div id="tab-members" class="card" style="display:none;">
       <p class="note">
         CSV 형식: 1열 = 고객번호(8자리 숫자), 2열 = 성명, 3열 = 휴대폰번호.<br/>
-        헤더 행이 있어도 자동으로 구분해서 건너뜁니다. 업로드된 고객번호는 모두 조합원으로 등록됩니다.
+        헤더 행이 있어도 자동으로 구분해서 건너뜁니다.<br/>
+        <strong>업로드하면 기존 조합원 명단은 모두 해제되고, 이번에 올린 파일 기준으로만 조합원이 관리됩니다.</strong>
       </p>
       <div class="add-row">
         <input type="file" id="csvFile" accept=".csv" />
         <button class="primary" id="uploadCsvBtn">업로드</button>
       </div>
       <div id="csvStatus"></div>
+
+      <h4 style="margin:20px 0 10px; font-size:13px;">최근 업로드 기록</h4>
+      <div id="uploadLogList">불러오는 중</div>
 
       <h4 style="margin:20px 0 10px; font-size:13px;">등록된 조합원 수: <span id="memberCount">-</span></h4>
       <div class="filters">
@@ -203,7 +207,7 @@
         el("tab-history").style.display = tab.dataset.tab === "history" ? "block" : "none";
         el("tab-users").style.display = tab.dataset.tab === "users" ? "block" : "none";
         el("tab-members").style.display = tab.dataset.tab === "members" ? "block" : "none";
-        if (tab.dataset.tab === "members") loadMembers();
+        if (tab.dataset.tab === "members") { loadMembers(); loadUploadLogs(); }
       });
     });
 
@@ -377,6 +381,18 @@
             return;
           }
 
+          // 1) 기존 조합원 표시를 전부 해제 (사업장 데이터는 그대로 유지, 조합원 여부만 초기화)
+          const { error: resetError } = await supabaseClient
+            .from("customers")
+            .update({ is_member: false })
+            .eq("is_member", true);
+
+          if (resetError) {
+            el("csvStatus").innerHTML = `<p class="status-msg warn">기존 명단 초기화 실패: ${resetError.message}</p>`;
+            return;
+          }
+
+          // 2) 새 명단 업로드 (조합원으로 등록)
           const { error } = await supabaseClient
             .from("customers")
             .upsert(records, { onConflict: "customer_id" });
@@ -386,14 +402,55 @@
             return;
           }
 
-          el("csvStatus").innerHTML = `<p class="status-msg ok">${records.length}건 등록/갱신 완료 (건너뜀 ${skipped}건)</p>`;
+          // 3) 업로드 이력 기록
+          await supabaseClient.from("member_upload_logs").insert({
+            uploaded_by: currentEmail,
+            file_name: file.name,
+            row_count: records.length
+          });
+
+          el("csvStatus").innerHTML = `<p class="status-msg ok">${records.length}건 등록 완료 (건너뜀 ${skipped}건) — 이 파일 기준으로 조합원 명단이 갱신되었습니다.</p>`;
           el("csvFile").value = "";
           loadMembers();
+          loadUploadLogs();
         }
       });
     });
 
     el("memberSearchBtn").addEventListener("click", loadMembers);
+
+    async function loadUploadLogs() {
+      el("uploadLogList").innerHTML = "불러오는 중";
+      const { data, error } = await supabaseClient
+        .from("member_upload_logs")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(10);
+
+      if (error) {
+        el("uploadLogList").innerHTML = `조회 실패: ${error.message}`;
+        return;
+      }
+      if (!data || data.length === 0) {
+        el("uploadLogList").innerHTML = "업로드 기록이 없습니다.";
+        return;
+      }
+      el("uploadLogList").innerHTML = `
+        <table>
+          <thead><tr><th>업로드 일시</th><th>파일명</th><th>건수</th><th>업로드한 사람</th></tr></thead>
+          <tbody>
+            ${data.map(r => `
+              <tr>
+                <td>${new Date(r.created_at).toLocaleString("ko-KR")}</td>
+                <td>${r.file_name || "-"}</td>
+                <td>${r.row_count ?? "-"}</td>
+                <td>${r.uploaded_by || "-"}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      `;
+    }
 
     async function loadMembers() {
       el("memberList").innerHTML = "불러오는 중";
