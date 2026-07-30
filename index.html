@@ -104,7 +104,10 @@
   <div id="appArea">
     <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
       <span id="userEmail" style="font-size:13px;color:var(--muted);"></span>
-      <button class="ghost" id="logoutBtn">로그아웃</button>
+      <div style="display:flex; gap:8px;">
+        <a id="adminLink" href="admin.html" style="display:none; font-size:13px; color:var(--accent); text-decoration:none; align-self:center;">관리자 페이지 →</a>
+        <button class="ghost" id="logoutBtn">로그아웃</button>
+      </div>
     </div>
 
     <!-- 입력 폼 -->
@@ -214,6 +217,9 @@
       el("loginArea").style.display = "none";
       el("appArea").style.display = "block";
       el("userEmail").textContent = `${currentUserEmail} (${allowed.role})`;
+      if (allowed.role === "admin") {
+        el("adminLink").style.display = "inline-block";
+      }
       loadRecentList();
     }
 
