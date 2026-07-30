@@ -183,7 +183,24 @@
     min-width: 0;
   }
   .layout .right .card { position: sticky; top: 20px; }
-  .del-cell { text-align: center; min-width: 64px; }
+  .del-cell { text-align: center; min-width: 64px; white-space: nowrap; }
+  .icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: background .12s ease, color .12s ease;
+  }
+  .icon-btn + .icon-btn { margin-left: 2px; }
+  .icon-btn.edit-btn:hover { background: var(--accent-light); color: var(--accent-dark); }
+  .icon-btn.delete-btn:hover { background: var(--warn-light); color: var(--warn); }
   .list-filter-btn.active {
     background: var(--accent-light);
     color: var(--accent-dark);
@@ -274,12 +291,13 @@
       <div class="right">
         <div class="card">
           <h3 style="display:flex; align-items:center; justify-content:space-between; border-bottom:none; margin-bottom:10px; padding-bottom:0;">
-            <span>최근 등록 현황</span>
+            <span>전체 등록 현황</span>
             <span style="display:flex; gap:4px;">
               <button class="ghost list-filter-btn active" data-mode="all" style="padding:5px 12px; font-size:12px;">전체</button>
               <button class="ghost list-filter-btn" data-mode="mine" style="padding:5px 12px; font-size:12px;">내 등록만</button>
             </span>
           </h3>
+          <input type="text" id="listSearch" placeholder="업체명, 주소, 전화번호, 고객번호로 검색 (이미 등록된 업체인지 확인)" style="margin-bottom:14px;" />
           <div style="border-bottom:1px solid var(--border); margin-bottom:16px;"></div>
           <div class="table-scroll" id="listArea">불러오는 중</div>
         </div>
@@ -656,6 +674,7 @@
     let lastListData = [];
     let editingId = null;
     let listFilterMode = "all";
+    let listSearchDebounce = null;
 
     document.querySelectorAll(".list-filter-btn").forEach(btn => {
       btn.addEventListener("click", () => {
@@ -666,15 +685,27 @@
       });
     });
 
+    el("listSearch").addEventListener("input", () => {
+      clearTimeout(listSearchDebounce);
+      listSearchDebounce = setTimeout(() => loadRecentList(), 300);
+    });
+
     async function loadRecentList() {
       let query = supabaseClient
         .from("business_sites_view")
         .select("*")
         .order("created_at", { ascending: false })
-        .limit(30);
+        .limit(1000);
 
       if (listFilterMode === "mine" && currentUserEmail) {
         query = query.eq("created_by", currentUserEmail);
+      }
+
+      const search = el("listSearch").value.trim();
+      if (search) {
+        query = query.or(
+          `business_name.ilike.%${search}%,address.ilike.%${search}%,phone.ilike.%${search}%,customer_id.ilike.%${search}%,customer_name.ilike.%${search}%`
+        );
       }
 
       const { data, error } = await query;
@@ -684,7 +715,9 @@
         return;
       }
       if (!data || data.length === 0) {
-        el("listArea").innerHTML = `등록된 사업장이 없습니다.`;
+        el("listArea").innerHTML = el("listSearch").value.trim()
+          ? `검색 결과가 없습니다. 아직 등록되지 않은 업체일 수 있습니다.`
+          : `등록된 사업장이 없습니다.`;
         return;
       }
       lastListData = data;
@@ -710,8 +743,12 @@
                 <td><span class="badge ${r.is_member ? "member" : "nonmember"}">${r.is_member ? "조합원" : "비조합원"}</span></td>
                 <td>${r.created_by_display || ""}</td>
                 <td class="del-cell">
-                  <button class="ghost edit-btn" data-id="${r.id}">수정</button>
-                  <button class="ghost delete-btn" data-id="${r.id}" style="color:var(--warn);">삭제</button>
+                  <button class="icon-btn edit-btn" data-id="${r.id}" title="수정">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                  </button>
+                  <button class="icon-btn delete-btn" data-id="${r.id}" title="삭제">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                  </button>
                 </td>
               </tr>
             `).join("")}
