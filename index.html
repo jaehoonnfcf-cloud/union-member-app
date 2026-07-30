@@ -124,6 +124,39 @@
   .status-line { font-size: 12px; margin-top: 6px; }
   .status-line.ok { color: var(--accent); }
   .status-line.muted { color: var(--muted); }
+  .lookup-box {
+    background: #f6f9f8;
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    padding: 14px 14px 12px;
+    margin: 14px 0 4px;
+  }
+  .lookup-title {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--accent-dark);
+    margin-bottom: 4px;
+  }
+  .lookup-title .hint { font-weight: 400; font-size: 11px; }
+  .lookup-divider {
+    text-align: center;
+    font-size: 11px;
+    color: var(--muted);
+    margin: 12px 0;
+    position: relative;
+  }
+  .lookup-divider::before, .lookup-divider::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    width: 40%;
+    border-top: 1px solid var(--border-strong);
+  }
+  .lookup-divider::before { left: 0; }
+  .lookup-divider::after { right: 0; }
   .banner {
     padding: 12px 14px;
     border-radius: 6px;
@@ -250,18 +283,28 @@
         <div class="card">
           <h3>사업장 등록</h3>
 
-          <label>고객번호 <span class="hint">(8자리 숫자 또는 임시번호)</span></label>
-          <div class="row">
-            <input type="text" id="customerId" placeholder="예: 12345678 또는 a1234567" />
-            <button id="genTempIdBtn" style="flex:0 0 auto;">임시번호 발급</button>
+          <div class="lookup-box">
+            <div class="lookup-title">
+              <span>조합원 조회</span>
+              <span class="hint">고객번호 또는 휴대폰번호, 둘 중 하나만 입력하면 자동조회됩니다</span>
+            </div>
+
+            <label style="margin-top:0;">고객번호 <span class="hint">(8자리 숫자 또는 임시번호)</span></label>
+            <div class="row">
+              <input type="text" id="customerId" placeholder="예: 12345678 또는 a1234567" />
+              <button id="genTempIdBtn" style="flex:0 0 auto;">임시번호 발급</button>
+            </div>
+
+            <div class="lookup-divider">또는</div>
+
+            <label>휴대폰번호</label>
+            <input type="text" id="mobilePhone" placeholder="010-0000-0000" />
+
+            <div id="memberCheckStatus" class="status-line"></div>
           </div>
-          <div id="memberCheckStatus" class="status-line"></div>
 
           <label>성명</label>
           <input type="text" id="customerName" placeholder="개인고객 실명" />
-
-          <label>휴대폰번호</label>
-          <input type="text" id="mobilePhone" placeholder="조합원 명단에 있으면 자동입력" />
 
           <label>사업자번호 <span class="hint">(선택)</span></label>
           <input type="text" id="bizRegNo" placeholder="000-00-00000" maxlength="12" />
