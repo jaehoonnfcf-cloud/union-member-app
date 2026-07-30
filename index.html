@@ -6,128 +6,207 @@
 <title>조합원 사업장관리</title>
 <style>
   :root {
-    --accent: #2f6f4f;
-    --accent-light: #e8f3ec;
-    --warn: #b4531f;
-    --warn-light: #fdece1;
-    --border: #ddd;
-    --text: #222;
-    --muted: #777;
+    --bg: #fafafa;
+    --surface: #ffffff;
+    --border: #e3e3e6;
+    --border-strong: #d4d4d8;
+    --text: #18181b;
+    --muted: #71717a;
+    --accent: #1f5c4a;
+    --accent-light: #e9f2ee;
+    --accent-dark: #164536;
+    --warn: #9a5b2e;
+    --warn-light: #fbf0e6;
+    --radius: 8px;
+    --shadow: 0 1px 2px rgba(0,0,0,0.04);
   }
   * { box-sizing: border-box; }
   body {
-    font-family: -apple-system, "Malgun Gothic", sans-serif;
-    max-width: 720px;
-    margin: 40px auto;
-    padding: 0 16px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Malgun Gothic", sans-serif;
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 48px 20px 80px;
+    background: var(--bg);
     color: var(--text);
-    line-height: 1.5;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
   }
-  h1 { font-size: 20px; margin-bottom: 4px; }
-  .sub { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
+  h1 { font-size: 21px; font-weight: 700; letter-spacing: -0.01em; margin: 0 0 4px; }
+  .sub { color: var(--muted); font-size: 13px; margin: 0 0 28px; }
   .card {
+    background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 20px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 24px;
     margin-bottom: 20px;
   }
-  label { display: block; font-size: 13px; font-weight: 600; margin: 12px 0 4px; }
+  .card h3 {
+    margin: 0 0 16px;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  label {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text);
+    margin: 16px 0 6px;
+  }
+  label .hint { font-weight: 400; color: var(--muted); }
   input[type=text], textarea {
     width: 100%;
-    padding: 9px 10px;
-    border: 1px solid var(--border);
+    padding: 9px 11px;
+    border: 1px solid var(--border-strong);
     border-radius: 6px;
-    font-size: 14px;
+    font-size: 13.5px;
+    color: var(--text);
+    background: var(--surface);
+    transition: border-color .12s ease;
   }
-  textarea { resize: vertical; min-height: 60px; }
+  input[type=text]:focus, textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  input[readonly] { background: #f4f4f5; color: var(--muted); }
+  textarea { resize: vertical; min-height: 64px; font-family: inherit; }
   .row { display: flex; gap: 8px; }
   .row > * { flex: 1; }
   button {
     padding: 9px 16px;
-    font-size: 14px;
+    font-size: 13px;
+    font-weight: 600;
     border-radius: 6px;
-    border: 1px solid var(--border);
-    background: white;
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    color: var(--text);
     cursor: pointer;
+    transition: background .12s ease, border-color .12s ease;
   }
-  button.primary { background: var(--accent); color: white; border-color: var(--accent); }
-  button.ghost { background: transparent; }
-  button:hover { filter: brightness(0.97); }
+  button:hover { background: #f4f4f5; }
+  button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  button.primary:hover { background: var(--accent-dark); }
+  button.ghost { background: transparent; border-color: transparent; color: var(--muted); }
+  button.ghost:hover { background: #f4f4f5; }
   .search-results {
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-strong);
     border-radius: 6px;
     margin-top: 6px;
     max-height: 220px;
     overflow-y: auto;
+    background: var(--surface);
   }
   .search-item {
-    padding: 8px 10px;
-    border-bottom: 1px solid #eee;
+    padding: 9px 11px;
+    border-bottom: 1px solid var(--border);
     cursor: pointer;
     font-size: 13px;
   }
+  .search-item:last-child { border-bottom: none; }
   .search-item:hover { background: var(--accent-light); }
-  .search-item b { display: block; font-size: 14px; }
-  .toggle-row { display: flex; align-items: center; gap: 6px; margin-top: 10px; font-size: 13px; color: var(--muted); }
+  .search-item b { display: block; font-size: 13.5px; font-weight: 600; margin-bottom: 2px; }
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+    font-size: 12.5px;
+    color: var(--muted);
+  }
+  .status-line { font-size: 12px; margin-top: 6px; }
+  .status-line.ok { color: var(--accent); }
+  .status-line.muted { color: var(--muted); }
   .banner {
     padding: 12px 14px;
-    border-radius: 8px;
+    border-radius: 6px;
     font-size: 13px;
     margin-top: 14px;
     white-space: pre-wrap;
+    border: 1px solid transparent;
   }
-  .banner.ok { background: var(--accent-light); color: var(--accent); }
-  .banner.warn { background: var(--warn-light); color: var(--warn); }
-  .banner.info { background: #eef2ff; color: #333; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
-  th, td { padding: 8px 6px; border-bottom: 1px solid #eee; text-align: left; vertical-align: top; }
-  th { color: var(--muted); font-weight: 600; font-size: 12px; }
-  .badge { display: inline-block; padding: 2px 8px; border-radius: 100px; font-size: 11px; }
-  .badge.member { background: var(--accent-light); color: var(--accent); }
-  .badge.nonmember { background: #f0f0f0; color: var(--muted); }
+  .banner.ok { background: var(--accent-light); color: var(--accent-dark); border-color: #c9e2d6; }
+  .banner.warn { background: var(--warn-light); color: var(--warn); border-color: #f0d9bf; }
+  .banner.info { background: #f4f4f5; color: var(--muted); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { padding: 9px 8px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.02em; }
+  tbody tr:hover { background: #fafafa; }
+  .badge {
+    display: inline-block;
+    padding: 2px 9px;
+    border-radius: 100px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .badge.member { background: var(--accent-light); color: var(--accent-dark); }
+  .badge.nonmember { background: #f4f4f5; color: var(--muted); }
   #appArea { display: none; }
-  #loginArea { text-align: center; padding: 60px 0; }
+  #loginArea {
+    text-align: center;
+    padding: 100px 0;
+  }
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .topbar .email { font-size: 12.5px; color: var(--muted); }
+  .topbar .actions { display: flex; gap: 14px; align-items: center; }
+  .topbar a {
+    font-size: 12.5px;
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .topbar a:hover { text-decoration: underline; }
 </style>
 </head>
 <body>
 
   <h1>조합원 사업장관리</h1>
-  <p class="sub">사업장 정보를 입력하고 조합원 여부를 확인합니다.</p>
+  <p class="sub">사업장 정보를 등록하고 조합원 여부를 확인합니다.</p>
 
-  <!-- 로그인 전 화면 -->
   <div id="loginArea">
-    <button class="primary" id="loginBtn">구글로 로그인</button>
-    <div id="loginStatus" class="banner info" style="max-width:400px;margin:20px auto 0;">로그인이 필요합니다.</div>
+    <button class="primary" id="loginBtn">Google 계정으로 로그인</button>
+    <div id="loginStatus" class="banner info" style="max-width:380px;margin:20px auto 0;">로그인이 필요합니다.</div>
   </div>
 
-  <!-- 로그인 후 전체 앱 -->
   <div id="appArea">
-    <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
-      <span id="userEmail" style="font-size:13px;color:var(--muted);"></span>
-      <div style="display:flex; gap:8px;">
-        <a id="adminLink" href="admin.html" style="display:none; font-size:13px; color:var(--accent); text-decoration:none; align-self:center;">관리자 페이지 →</a>
+    <div class="card topbar">
+      <span class="email" id="userEmail"></span>
+      <div class="actions">
+        <a id="adminLink" href="admin.html" style="display:none;">관리자 페이지</a>
         <button class="ghost" id="logoutBtn">로그아웃</button>
       </div>
     </div>
 
-    <!-- 입력 폼 -->
     <div class="card">
-      <h3 style="margin-top:0;">사업장 등록</h3>
+      <h3>사업장 등록</h3>
 
-      <label>고객번호 <span style="font-weight:400;color:var(--muted);">(8자리 숫자 또는 임시번호)</span></label>
+      <label>고객번호 <span class="hint">(8자리 숫자 또는 임시번호)</span></label>
       <div class="row">
         <input type="text" id="customerId" placeholder="예: 12345678 또는 a1234567" />
         <button id="genTempIdBtn" style="flex:0 0 auto;">임시번호 발급</button>
       </div>
-
-      <div id="memberCheckStatus" style="font-size:12px; margin-top:4px;"></div>
+      <div id="memberCheckStatus" class="status-line"></div>
 
       <label>성명</label>
       <input type="text" id="customerName" placeholder="개인고객 실명" />
 
+      <label>휴대폰번호</label>
+      <input type="text" id="mobilePhone" placeholder="조합원 명단에 있으면 자동입력" />
+
+      <label>사업자번호 <span class="hint">(선택)</span></label>
+      <input type="text" id="bizRegNo" placeholder="000-00-00000" maxlength="12" />
+
       <div class="toggle-row">
         <input type="checkbox" id="manualToggle" />
-        <label for="manualToggle" style="margin:0;font-weight:400;">네이버 검색 없이 수기로 입력할게요</label>
+        <label for="manualToggle" style="margin:0;font-weight:400;">네이버 검색 없이 수기로 입력</label>
       </div>
 
       <div id="naverSearchBox">
@@ -145,13 +224,13 @@
       <label>전화번호(대표번호)</label>
       <input type="text" id="phone" />
 
-      <label>상품(취급 품목/업종)</label>
+      <label>상품 <span class="hint">(취급 품목/업종)</span></label>
       <input type="text" id="category" />
 
-      <label>기타사항 <span style="font-weight:400;color:var(--muted);">(수기 메모)</span></label>
+      <label>기타사항 <span class="hint">(수기 메모)</span></label>
       <textarea id="memo" placeholder="고객 특징, 관련자 정보 등"></textarea>
 
-      <div style="margin-top:16px; display:flex; gap:8px;">
+      <div style="margin-top:18px; display:flex; gap:8px;">
         <button class="primary" id="saveBtn">저장</button>
         <button class="ghost" id="resetBtn">초기화</button>
       </div>
@@ -159,10 +238,9 @@
       <div id="saveStatus"></div>
     </div>
 
-    <!-- 결과 리스트 -->
     <div class="card">
-      <h3 style="margin-top:0;">최근 등록 현황</h3>
-      <div id="listArea">불러오는 중...</div>
+      <h3>최근 등록 현황</h3>
+      <div id="listArea">불러오는 중</div>
     </div>
   </div>
 
@@ -213,12 +291,12 @@
         el("appArea").style.display = "none";
         el("loginStatus").className = "banner warn";
         el("loginStatus").textContent =
-          `⚠️ ${currentUserEmail} 계정은 접근이 허용되지 않았습니다. 관리자에게 등록을 요청하세요.`;
+          `${currentUserEmail} 계정은 접근이 허용되지 않았습니다. 관리자에게 등록을 요청하세요.`;
         return;
       }
       el("loginArea").style.display = "none";
       el("appArea").style.display = "block";
-      el("userEmail").textContent = `${currentUserEmail} (${allowed.role})`;
+      el("userEmail").textContent = `${currentUserEmail} · ${allowed.role}`;
       if (allowed.role === "admin") {
         el("adminLink").style.display = "inline-block";
       }
@@ -246,42 +324,66 @@
     async function checkCustomerId(id) {
       const statusBox = el("memberCheckStatus");
       const nameInput = el("customerName");
+      const mobileInput = el("mobilePhone");
 
       if (!/^\d{8}$/.test(id)) {
         statusBox.textContent = "";
+        statusBox.className = "status-line";
         nameInput.readOnly = false;
+        mobileInput.readOnly = false;
         return;
       }
 
       const { data, error } = await supabaseClient
         .from("customers")
-        .select("name, is_member")
+        .select("name, mobile_phone, is_member")
         .eq("customer_id", id)
         .maybeSingle();
 
       if (error || !data) {
-        statusBox.innerHTML = `<span style="color:var(--muted);">조합원 명단에 없는 고객번호입니다. 성명을 직접 입력해주세요.</span>`;
+        statusBox.textContent = "조합원 명단에 없는 고객번호입니다. 성명/휴대폰번호를 직접 입력해주세요.";
+        statusBox.className = "status-line muted";
         nameInput.readOnly = false;
+        mobileInput.readOnly = false;
         return;
       }
 
       if (data.is_member) {
         nameInput.value = data.name || "";
+        mobileInput.value = data.mobile_phone || "";
         nameInput.readOnly = true;
-        statusBox.innerHTML = `<span style="color:var(--accent);">✅ 조합원 명단 확인됨 - 성명 자동입력 (직접 수정하려면 <a href="#" id="unlockNameBtn">여기</a> 클릭)</span>`;
+        mobileInput.readOnly = true;
+        statusBox.innerHTML = `조합원 명단 확인됨 · 성명/휴대폰번호 자동입력 (<a href="#" id="unlockNameBtn">직접 수정</a>)`;
+        statusBox.className = "status-line ok";
         const unlockBtn = document.getElementById("unlockNameBtn");
         if (unlockBtn) {
           unlockBtn.addEventListener("click", (ev) => {
             ev.preventDefault();
             nameInput.readOnly = false;
+            mobileInput.readOnly = false;
           });
         }
       } else {
         nameInput.value = data.name || "";
+        mobileInput.value = data.mobile_phone || "";
         nameInput.readOnly = false;
-        statusBox.innerHTML = `<span style="color:var(--muted);">조합원은 아니지만 기존 등록된 고객번호입니다.</span>`;
+        mobileInput.readOnly = false;
+        statusBox.textContent = "조합원은 아니지만 기존 등록된 고객번호입니다.";
+        statusBox.className = "status-line muted";
       }
     }
+
+    // ---------- 사업자번호 자동 하이픈 ----------
+    el("bizRegNo").addEventListener("input", (e) => {
+      let digits = e.target.value.replace(/\D/g, "").slice(0, 10);
+      let formatted = digits;
+      if (digits.length > 5) {
+        formatted = `${digits.slice(0,3)}-${digits.slice(3,5)}-${digits.slice(5)}`;
+      } else if (digits.length > 3) {
+        formatted = `${digits.slice(0,3)}-${digits.slice(3)}`;
+      }
+      e.target.value = formatted;
+    });
 
     el("manualToggle").addEventListener("change", (e) => {
       el("naverSearchBox").style.display = e.target.checked ? "none" : "block";
@@ -322,7 +424,7 @@
       const box = el("naverResults");
       if (items.length === 0) {
         box.style.display = "block";
-        box.innerHTML = `<div class="search-item">검색 결과 없음 - 수기입력을 이용하세요</div>`;
+        box.innerHTML = `<div class="search-item">검색 결과 없음 — 수기입력을 이용하세요</div>`;
         return;
       }
       box.style.display = "block";
@@ -359,6 +461,7 @@
       const phone = el("phone").value.trim();
       const category = el("category").value.trim();
       const memo = el("memo").value.trim();
+      const bizRegNo = el("bizRegNo").value.trim();
 
       if (!customerId || !businessName) {
         showSaveStatus("고객번호와 상호는 필수입니다.", "warn");
@@ -366,6 +469,10 @@
       }
       if (!/^\d{8}$/.test(customerId) && !/^[a-z]\d{7}$/i.test(customerId)) {
         showSaveStatus("고객번호 형식이 올바르지 않습니다. (8자리 숫자 또는 영문1+숫자7)", "warn");
+        return;
+      }
+      if (bizRegNo && !/^\d{3}-\d{2}-\d{5}$/.test(bizRegNo)) {
+        showSaveStatus("사업자번호 형식이 올바르지 않습니다. (000-00-00000)", "warn");
         return;
       }
 
@@ -386,8 +493,8 @@
         if (dups && dups.length > 0) {
           const d = dups[0];
           showSaveStatus(
-            `⚠️ 이미 등록된 사업장일 수 있습니다.\n기존 상호: ${d.business_name} / 고객번호: ${d.customer_id} / 등록자: ${d.created_by}\n` +
-            `그래도 다른 업체가 맞다면 아래 "그래도 등록" 버튼을 눌러주세요.`,
+            `이미 등록된 사업장일 수 있습니다.\n기존 상호: ${d.business_name} · 고객번호: ${d.customer_id} · 등록자: ${d.created_by}\n` +
+            `다른 업체가 맞다면 아래 버튼으로 등록을 계속할 수 있습니다.`,
             "warn",
             true
           );
@@ -398,7 +505,8 @@
       await supabaseClient.from("customers").upsert({
         customer_id: customerId,
         is_temp_id: /^[a-z]/i.test(customerId),
-        name: el("customerName").value.trim() || null
+        name: el("customerName").value.trim() || null,
+        mobile_phone: el("mobilePhone").value.trim() || null
       }, { onConflict: "customer_id", ignoreDuplicates: true });
 
       const { error: insertError } = await supabaseClient.from("business_sites").insert({
@@ -408,6 +516,7 @@
         road_address: selectedNaverItem ? selectedNaverItem.roadAddress : null,
         phone: phone,
         category: category,
+        business_reg_no: bizRegNo || null,
         menu_or_desc: selectedNaverItem ? selectedNaverItem.description : null,
         naver_place_id: naverPlaceUrl,
         naver_place_url: naverPlaceUrl,
@@ -423,7 +532,7 @@
         return;
       }
 
-      showSaveStatus("✅ 저장되었습니다.", "ok");
+      showSaveStatus("저장되었습니다.", "ok");
       clearForm();
       loadRecentList();
     }
@@ -433,7 +542,7 @@
       box.innerHTML = `<div class="banner ${type}">${msg}</div>`;
       if (showForceBtn) {
         const btn = document.createElement("button");
-        btn.textContent = "그래도 등록 (다른 업체 맞음)";
+        btn.textContent = "그대로 등록";
         btn.className = "primary";
         btn.style.marginTop = "8px";
         btn.onclick = () => saveEntry(true);
@@ -442,11 +551,12 @@
     }
 
     function clearForm() {
-      ["customerId","customerName","naverQuery","businessName","address","phone","category","memo"]
+      ["customerId","customerName","mobilePhone","bizRegNo","naverQuery","businessName","address","phone","category","memo"]
         .forEach(id => el(id).value = "");
       selectedNaverItem = null;
       el("naverResults").style.display = "none";
       el("customerName").readOnly = false;
+      el("mobilePhone").readOnly = false;
       el("memberCheckStatus").innerHTML = "";
     }
 
