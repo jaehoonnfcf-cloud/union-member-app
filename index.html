@@ -13,9 +13,9 @@
     --border-strong: #d7dad8;
     --text: #16181a;
     --muted: #6b7370;
-    --accent: #03a26a;
-    --accent-light: #e5f7ee;
-    --accent-dark: #027a51;
+    --accent: #2563eb;
+    --accent-light: #eaf1fe;
+    --accent-dark: #1d4fc4;
     --warn: #b5601f;
     --warn-light: #fdf1e6;
     --radius: 14px;
@@ -46,6 +46,18 @@
     transition: box-shadow .18s ease;
   }
   .card:hover { box-shadow: var(--shadow-lg); }
+  .card-banner {
+    background: var(--accent);
+    color: #fff;
+    margin: 0 -26px 20px;
+    padding: 16px 26px;
+    border-radius: var(--radius) var(--radius) 0 0;
+    font-weight: 700;
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
   .card h3 {
     margin: 0 0 16px;
     font-size: 15px;
@@ -94,7 +106,7 @@
   }
   button:hover { background: #f4f5f4; }
   button:active { transform: scale(0.98); }
-  button.primary { background: var(--accent); color: #fff; border-color: var(--accent); box-shadow: 0 4px 14px rgba(3,162,106,0.25); }
+  button.primary { background: var(--accent); color: #fff; border-color: var(--accent); box-shadow: 0 4px 14px rgba(37,99,235,0.28); }
   button.primary:hover { background: var(--accent-dark); }
   button.ghost { background: transparent; border-color: transparent; color: var(--muted); box-shadow: none; }
   button.ghost:hover { background: #f4f5f4; }
@@ -130,7 +142,7 @@
   .status-line.ok { color: var(--accent); }
   .status-line.muted { color: var(--muted); }
   .lookup-box {
-    background: linear-gradient(180deg, #f2f9f6, #f6f9f8);
+    background: linear-gradient(180deg, #eef4fe, #f6f8fa);
     border: 1px solid var(--border-strong);
     border-radius: 12px;
     padding: 16px 16px 14px;
@@ -281,7 +293,7 @@
   .layout .right .card {
     min-width: 0;
   }
-  .layout .left .card { padding: 20px; position: sticky; top: 20px; }
+  .layout .left .card { position: sticky; top: 20px; }
   .del-cell { text-align: center; min-width: 64px; white-space: nowrap; }
   .icon-btn {
     display: inline-flex;
@@ -329,11 +341,11 @@
   <div id="appArea">
     <div class="layout">
       <div class="left">
-        <div class="card">
-          <h3 style="display:flex; align-items:center; justify-content:space-between;">
+        <div class="card" style="padding-top:0;">
+          <div class="card-banner">
             <span>사업장 등록</span>
-            <button class="ghost" id="openMemberSearchBtn" style="font-size:12px; padding:6px 10px; border:1px solid var(--border-strong);">조합원 검색 (팝업)</button>
-          </h3>
+            <button class="ghost" id="openMemberSearchBtn" style="font-size:12px; padding:6px 10px; background:rgba(255,255,255,0.15); color:#fff; border:1px solid rgba(255,255,255,0.4);">조합원 검색 (팝업)</button>
+          </div>
 
           <div class="lookup-box">
             <div class="lookup-title">
