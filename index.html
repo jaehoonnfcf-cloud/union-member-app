@@ -187,6 +187,13 @@
   }
   @media (max-width: 980px) {
     .layout { grid-template-columns: 1fr; }
+    .layout .left .card { position: static; }
+  }
+  @media (max-width: 600px) {
+    body { width: 94%; padding: 24px 0 60px; }
+    .page-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+    .account-info { flex-wrap: wrap; white-space: normal; gap: 10px; }
+    h1 { font-size: 18px; }
   }
   .layout .right,
   .layout .right .card {
