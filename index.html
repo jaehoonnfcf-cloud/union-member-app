@@ -3,138 +3,435 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>조합원 사업장관리 - 로그인 테스트</title>
+<title>조합원 사업장관리</title>
 <style>
+  :root {
+    --accent: #2f6f4f;
+    --accent-light: #e8f3ec;
+    --warn: #b4531f;
+    --warn-light: #fdece1;
+    --border: #ddd;
+    --text: #222;
+    --muted: #777;
+  }
+  * { box-sizing: border-box; }
   body {
     font-family: -apple-system, "Malgun Gothic", sans-serif;
-    max-width: 480px;
-    margin: 80px auto;
-    text-align: center;
-    color: #222;
+    max-width: 720px;
+    margin: 40px auto;
+    padding: 0 16px;
+    color: var(--text);
+    line-height: 1.5;
   }
+  h1 { font-size: 20px; margin-bottom: 4px; }
+  .sub { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
+  .card {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  label { display: block; font-size: 13px; font-weight: 600; margin: 12px 0 4px; }
+  input[type=text], textarea {
+    width: 100%;
+    padding: 9px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 14px;
+  }
+  textarea { resize: vertical; min-height: 60px; }
+  .row { display: flex; gap: 8px; }
+  .row > * { flex: 1; }
   button {
-    padding: 12px 24px;
-    font-size: 16px;
-    border-radius: 8px;
-    border: 1px solid #ccc;
+    padding: 9px 16px;
+    font-size: 14px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
     background: white;
     cursor: pointer;
   }
-  button:hover { background: #f5f5f5; }
-  #status {
-    margin-top: 24px;
-    padding: 16px;
-    border-radius: 8px;
-    font-size: 14px;
-    white-space: pre-wrap;
-    text-align: left;
+  button.primary { background: var(--accent); color: white; border-color: var(--accent); }
+  button.ghost { background: transparent; }
+  button:hover { filter: brightness(0.97); }
+  .search-results {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    margin-top: 6px;
+    max-height: 220px;
+    overflow-y: auto;
   }
-  .ok { background: #e6f7ee; color: #0a7a3d; }
-  .fail { background: #fdeaea; color: #b00020; }
-  .info { background: #eef2ff; color: #333; }
+  .search-item {
+    padding: 8px 10px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    font-size: 13px;
+  }
+  .search-item:hover { background: var(--accent-light); }
+  .search-item b { display: block; font-size: 14px; }
+  .toggle-row { display: flex; align-items: center; gap: 6px; margin-top: 10px; font-size: 13px; color: var(--muted); }
+  .banner {
+    padding: 12px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-top: 14px;
+    white-space: pre-wrap;
+  }
+  .banner.ok { background: var(--accent-light); color: var(--accent); }
+  .banner.warn { background: var(--warn-light); color: var(--warn); }
+  .banner.info { background: #eef2ff; color: #333; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
+  th, td { padding: 8px 6px; border-bottom: 1px solid #eee; text-align: left; vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 100px; font-size: 11px; }
+  .badge.member { background: var(--accent-light); color: var(--accent); }
+  .badge.nonmember { background: #f0f0f0; color: var(--muted); }
+  #appArea { display: none; }
+  #loginArea { text-align: center; padding: 60px 0; }
 </style>
 </head>
 <body>
 
-  <h2>조합원 사업장관리 시스템</h2>
-  <p>로그인 테스트 페이지</p>
+  <h1>조합원 사업장관리</h1>
+  <p class="sub">사업장 정보를 입력하고 조합원 여부를 확인합니다.</p>
 
-  <div id="loginBox">
-    <button id="loginBtn">구글로 로그인</button>
+  <!-- 로그인 전 화면 -->
+  <div id="loginArea">
+    <button class="primary" id="loginBtn">구글로 로그인</button>
+    <div id="loginStatus" class="banner info" style="max-width:400px;margin:20px auto 0;">로그인이 필요합니다.</div>
   </div>
 
-  <div id="userBox" style="display:none;">
-    <p id="userEmail"></p>
-    <button id="logoutBtn">로그아웃</button>
+  <!-- 로그인 후 전체 앱 -->
+  <div id="appArea">
+    <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+      <span id="userEmail" style="font-size:13px;color:var(--muted);"></span>
+      <button class="ghost" id="logoutBtn">로그아웃</button>
+    </div>
+
+    <!-- 입력 폼 -->
+    <div class="card">
+      <h3 style="margin-top:0;">사업장 등록</h3>
+
+      <label>고객번호 <span style="font-weight:400;color:var(--muted);">(8자리 숫자 또는 임시번호)</span></label>
+      <div class="row">
+        <input type="text" id="customerId" placeholder="예: 12345678 또는 a1234567" />
+        <button id="genTempIdBtn" style="flex:0 0 auto;">임시번호 발급</button>
+      </div>
+
+      <label>성명</label>
+      <input type="text" id="customerName" placeholder="개인고객 실명" />
+
+      <div class="toggle-row">
+        <input type="checkbox" id="manualToggle" />
+        <label for="manualToggle" style="margin:0;font-weight:400;">네이버 검색 없이 수기로 입력할게요</label>
+      </div>
+
+      <div id="naverSearchBox">
+        <label>상호 검색 (네이버)</label>
+        <input type="text" id="naverQuery" placeholder="업체명 또는 주소로 검색" />
+        <div id="naverResults" class="search-results" style="display:none;"></div>
+      </div>
+
+      <label>상호</label>
+      <input type="text" id="businessName" />
+
+      <label>주소</label>
+      <input type="text" id="address" />
+
+      <label>전화번호(대표번호)</label>
+      <input type="text" id="phone" />
+
+      <label>상품(취급 품목/업종)</label>
+      <input type="text" id="category" />
+
+      <label>기타사항 <span style="font-weight:400;color:var(--muted);">(수기 메모)</span></label>
+      <textarea id="memo" placeholder="고객 특징, 관련자 정보 등"></textarea>
+
+      <div style="margin-top:16px; display:flex; gap:8px;">
+        <button class="primary" id="saveBtn">저장</button>
+        <button class="ghost" id="resetBtn">초기화</button>
+      </div>
+
+      <div id="saveStatus"></div>
+    </div>
+
+    <!-- 결과 리스트 -->
+    <div class="card">
+      <h3 style="margin-top:0;">최근 등록 현황</h3>
+      <div id="listArea">불러오는 중...</div>
+    </div>
   </div>
 
-  <div id="status" class="info">아직 로그인하지 않았습니다.</div>
-
-  <!-- Supabase JS SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    // ====== 여기에 본인 Supabase 정보 입력됨 ======
     const SUPABASE_URL = "https://kakujhsdxyljkstpfymk.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtha3VqaHNkeHlsamtzdHBmeW1rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzNDM1OTYsImV4cCI6MjEwMDkxOTU5Nn0.5mKR4Zksu9J791-fqM9KL-scOS0xB3Hhvj5nuQKoVbE";
-    // ==============================================
 
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    let currentUserEmail = null;
+    let selectedNaverItem = null;
 
-    const loginBox = document.getElementById("loginBox");
-    const userBox = document.getElementById("userBox");
-    const userEmailEl = document.getElementById("userEmail");
-    const statusEl = document.getElementById("status");
+    const el = (id) => document.getElementById(id);
 
-    function setStatus(msg, type) {
-      statusEl.textContent = msg;
-      statusEl.className = type;
-    }
-
-    // 구글 로그인 버튼
-    document.getElementById("loginBtn").addEventListener("click", async () => {
-      const { error } = await supabaseClient.auth.signInWithOAuth({
+    el("loginBtn").addEventListener("click", async () => {
+      await supabaseClient.auth.signInWithOAuth({
         provider: "google",
-        options: {
-          redirectTo: window.location.href
-        }
+        options: { redirectTo: window.location.href }
       });
-      if (error) {
-        setStatus("로그인 시작 실패: " + error.message, "fail");
-      }
     });
 
-    // 로그아웃 버튼
-    document.getElementById("logoutBtn").addEventListener("click", async () => {
+    el("logoutBtn").addEventListener("click", async () => {
       await supabaseClient.auth.signOut();
       window.location.reload();
     });
 
-    // 화이트리스트(allowed_users) 확인
     async function checkAllowedUser(email) {
       const { data, error } = await supabaseClient
         .from("allowed_users")
         .select("email, role")
         .eq("email", email)
         .maybeSingle();
+      if (error || !data) return null;
+      return data;
+    }
 
-      if (error) {
-        setStatus("allowed_users 조회 중 오류: " + error.message, "fail");
+    async function refreshUI() {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (!session) {
+        el("loginArea").style.display = "block";
+        el("appArea").style.display = "none";
+        return;
+      }
+      currentUserEmail = session.user.email;
+      const allowed = await checkAllowedUser(currentUserEmail);
+      if (!allowed) {
+        el("loginArea").style.display = "block";
+        el("appArea").style.display = "none";
+        el("loginStatus").className = "banner warn";
+        el("loginStatus").textContent =
+          `⚠️ ${currentUserEmail} 계정은 접근이 허용되지 않았습니다. 관리자에게 등록을 요청하세요.`;
+        return;
+      }
+      el("loginArea").style.display = "none";
+      el("appArea").style.display = "block";
+      el("userEmail").textContent = `${currentUserEmail} (${allowed.role})`;
+      loadRecentList();
+    }
+
+    supabaseClient.auth.onAuthStateChange(() => refreshUI());
+    refreshUI();
+
+    el("genTempIdBtn").addEventListener("click", () => {
+      const rand = Math.floor(1000000 + Math.random() * 9000000);
+      const letters = "abcdefghjkmnpqrstuvwxyz";
+      const prefix = letters[Math.floor(Math.random() * letters.length)];
+      el("customerId").value = prefix + rand;
+    });
+
+    el("manualToggle").addEventListener("change", (e) => {
+      el("naverSearchBox").style.display = e.target.checked ? "none" : "block";
+      selectedNaverItem = null;
+    });
+
+    let debounceTimer = null;
+    el("naverQuery").addEventListener("input", (e) => {
+      clearTimeout(debounceTimer);
+      const q = e.target.value.trim();
+      if (q.length < 2) {
+        el("naverResults").style.display = "none";
+        return;
+      }
+      debounceTimer = setTimeout(() => searchNaver(q), 400);
+    });
+
+    async function searchNaver(query) {
+      try {
+        const res = await fetch(`${SUPABASE_URL}/functions/v1/naver-search`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+            "apikey": SUPABASE_ANON_KEY
+          },
+          body: JSON.stringify({ query })
+        });
+        const data = await res.json();
+        renderNaverResults(data.items || []);
+      } catch (e) {
+        el("naverResults").style.display = "block";
+        el("naverResults").innerHTML = `<div class="search-item">검색 실패: ${e}</div>`;
+      }
+    }
+
+    function renderNaverResults(items) {
+      const box = el("naverResults");
+      if (items.length === 0) {
+        box.style.display = "block";
+        box.innerHTML = `<div class="search-item">검색 결과 없음 - 수기입력을 이용하세요</div>`;
+        return;
+      }
+      box.style.display = "block";
+      box.innerHTML = items.map((item, i) => `
+        <div class="search-item" data-idx="${i}">
+          <b>${item.title}</b>
+          ${item.roadAddress || item.address} · ${item.telephone || "전화번호 없음"}
+        </div>
+      `).join("");
+      box.querySelectorAll(".search-item[data-idx]").forEach((elm) => {
+        elm.addEventListener("click", () => {
+          const item = items[elm.dataset.idx];
+          selectedNaverItem = item;
+          el("businessName").value = item.title;
+          el("address").value = item.roadAddress || item.address;
+          el("phone").value = item.telephone || "";
+          el("category").value = item.category || "";
+          box.style.display = "none";
+          el("naverQuery").value = item.title;
+        });
+      });
+    }
+
+    function normalizeKey(name, address) {
+      return (name + address).toLowerCase().replace(/[^a-z0-9가-힣]/g, "");
+    }
+
+    el("saveBtn").addEventListener("click", async () => saveEntry(false));
+
+    async function saveEntry(force) {
+      const customerId = el("customerId").value.trim();
+      const businessName = el("businessName").value.trim();
+      const address = el("address").value.trim();
+      const phone = el("phone").value.trim();
+      const category = el("category").value.trim();
+      const memo = el("memo").value.trim();
+
+      if (!customerId || !businessName) {
+        showSaveStatus("고객번호와 상호는 필수입니다.", "warn");
+        return;
+      }
+      if (!/^\d{8}$/.test(customerId) && !/^[a-z]\d{7}$/i.test(customerId)) {
+        showSaveStatus("고객번호 형식이 올바르지 않습니다. (8자리 숫자 또는 영문1+숫자7)", "warn");
         return;
       }
 
-      if (data) {
-        setStatus(
-          `✅ 로그인 성공 & 접근 허용됨\n이메일: ${data.email}\n권한: ${data.role}`,
-          "ok"
-        );
-      } else {
-        setStatus(
-          `⚠️ 구글 로그인은 성공했지만, 이 이메일(${email})은 allowed_users 테이블에 등록되어 있지 않아 접근이 차단됩니다.\nSupabase SQL Editor에서 아래처럼 등록해주세요:\n\ninsert into allowed_users (email, role) values ('${email}', 'user');`,
-          "fail"
-        );
+      const dupKey = normalizeKey(businessName, address);
+      const naverPlaceUrl = selectedNaverItem ? selectedNaverItem.link : null;
+
+      if (!force) {
+        const { data: dups, error } = await supabaseClient.rpc("check_duplicate_business", {
+          p_customer_id: customerId,
+          p_phone: phone || null,
+          p_naver_place_url: naverPlaceUrl,
+          p_dup_key: dupKey
+        });
+        if (error) {
+          showSaveStatus("중복체크 오류: " + error.message, "warn");
+          return;
+        }
+        if (dups && dups.length > 0) {
+          const d = dups[0];
+          showSaveStatus(
+            `⚠️ 이미 등록된 사업장일 수 있습니다.\n기존 상호: ${d.business_name} / 고객번호: ${d.customer_id} / 등록자: ${d.created_by}\n` +
+            `그래도 다른 업체가 맞다면 아래 "그래도 등록" 버튼을 눌러주세요.`,
+            "warn",
+            true
+          );
+          return;
+        }
+      }
+
+      await supabaseClient.from("customers").upsert({
+        customer_id: customerId,
+        is_temp_id: /^[a-z]/i.test(customerId),
+        name: el("customerName").value.trim() || null
+      }, { onConflict: "customer_id", ignoreDuplicates: true });
+
+      const { error: insertError } = await supabaseClient.from("business_sites").insert({
+        customer_id: customerId,
+        business_name: businessName,
+        address: address,
+        road_address: selectedNaverItem ? selectedNaverItem.roadAddress : null,
+        phone: phone,
+        category: category,
+        menu_or_desc: selectedNaverItem ? selectedNaverItem.description : null,
+        naver_place_id: naverPlaceUrl,
+        naver_place_url: naverPlaceUrl,
+        source_type: selectedNaverItem ? "naver" : "manual",
+        duplicate_check_key: dupKey,
+        memo: memo,
+        created_by: currentUserEmail,
+        updated_by: currentUserEmail
+      });
+
+      if (insertError) {
+        showSaveStatus("저장 실패: " + insertError.message, "warn");
+        return;
+      }
+
+      showSaveStatus("✅ 저장되었습니다.", "ok");
+      clearForm();
+      loadRecentList();
+    }
+
+    function showSaveStatus(msg, type, showForceBtn) {
+      const box = el("saveStatus");
+      box.innerHTML = `<div class="banner ${type}">${msg}</div>`;
+      if (showForceBtn) {
+        const btn = document.createElement("button");
+        btn.textContent = "그래도 등록 (다른 업체 맞음)";
+        btn.className = "primary";
+        btn.style.marginTop = "8px";
+        btn.onclick = () => saveEntry(true);
+        box.appendChild(btn);
       }
     }
 
-    // 세션 확인 및 화면 갱신
-    async function refreshUI() {
-      const { data: { session } } = await supabaseClient.auth.getSession();
-      if (session) {
-        loginBox.style.display = "none";
-        userBox.style.display = "block";
-        userEmailEl.textContent = "로그인됨: " + session.user.email;
-        await checkAllowedUser(session.user.email);
-      } else {
-        loginBox.style.display = "block";
-        userBox.style.display = "none";
-        setStatus("아직 로그인하지 않았습니다.", "info");
-      }
+    function clearForm() {
+      ["customerId","customerName","naverQuery","businessName","address","phone","category","memo"]
+        .forEach(id => el(id).value = "");
+      selectedNaverItem = null;
+      el("naverResults").style.display = "none";
     }
 
-    supabaseClient.auth.onAuthStateChange((_event, _session) => {
-      refreshUI();
+    el("resetBtn").addEventListener("click", () => {
+      clearForm();
+      el("saveStatus").innerHTML = "";
     });
 
-    refreshUI();
+    async function loadRecentList() {
+      const { data, error } = await supabaseClient
+        .from("business_sites_view")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(20);
+
+      if (error) {
+        el("listArea").innerHTML = `조회 실패: ${error.message}`;
+        return;
+      }
+      if (!data || data.length === 0) {
+        el("listArea").innerHTML = `등록된 사업장이 없습니다.`;
+        return;
+      }
+      el("listArea").innerHTML = `
+        <table>
+          <thead>
+            <tr><th>고객번호</th><th>상호</th><th>주소</th><th>전화</th><th>조합원</th><th>등록자</th></tr>
+          </thead>
+          <tbody>
+            ${data.map(r => `
+              <tr>
+                <td>${r.customer_id}</td>
+                <td>${r.business_name}</td>
+                <td>${r.address || ""}</td>
+                <td>${r.phone || ""}</td>
+                <td><span class="badge ${r.is_member ? "member" : "nonmember"}">${r.is_member ? "조합원" : "비조합원"}</span></td>
+                <td>${r.created_by || ""}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      `;
+    }
   </script>
 </body>
 </html>
