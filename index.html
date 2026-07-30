@@ -467,6 +467,60 @@
     }
 
     // ---------- 사업자번호 자동 하이픈 ----------
+    // ---------- 휴대폰번호 입력 시 고객번호 역조회 ----------
+    let mobileDebounce = null;
+    el("mobilePhone").addEventListener("input", (e) => {
+      clearTimeout(mobileDebounce);
+      const val = e.target.value.trim();
+      // 고객번호가 이미 채워져 있으면(수기 입력 중이거나 이미 조회됨) 역조회로 덮어쓰지 않음
+      if (el("customerId").value.trim()) return;
+      const digits = val.replace(/\D/g, "");
+      if (digits.length < 8) return;
+      mobileDebounce = setTimeout(() => lookupByMobile(val), 400);
+    });
+
+    async function lookupByMobile(mobile) {
+      const statusBox = el("memberCheckStatus");
+      const { data, error } = await supabaseClient.rpc("find_customer_by_mobile", { p_mobile: mobile });
+
+      if (error || !data || data.length === 0) return;
+
+      if (data.length === 1) {
+        applyMobileMatch(data[0]);
+      } else {
+        statusBox.innerHTML = `이 번호로 여러 명이 조회됩니다: ` +
+          data.map(d => `<a href="#" class="mobile-match" data-id="${d.customer_id}">${d.name || d.customer_id}(${d.customer_id})</a>`).join(", ");
+        statusBox.className = "status-line muted";
+        document.querySelectorAll(".mobile-match").forEach(a => {
+          a.addEventListener("click", (ev) => {
+            ev.preventDefault();
+            const match = data.find(d => d.customer_id === a.dataset.id);
+            applyMobileMatch(match);
+          });
+        });
+      }
+    }
+
+    function applyMobileMatch(match) {
+      el("customerId").value = match.customer_id;
+      el("customerName").value = match.name || "";
+      el("customerName").readOnly = !!match.is_member;
+      el("mobilePhone").readOnly = !!match.is_member;
+      const statusBox = el("memberCheckStatus");
+      statusBox.innerHTML = match.is_member
+        ? `휴대폰번호로 조합원 확인됨 · 고객번호 자동입력 (<a href="#" id="unlockNameBtn">직접 수정</a>)`
+        : `휴대폰번호로 기존 고객 확인됨 (조합원 아님) · 고객번호 자동입력`;
+      statusBox.className = "status-line ok";
+      const unlockBtn = document.getElementById("unlockNameBtn");
+      if (unlockBtn) {
+        unlockBtn.addEventListener("click", (ev) => {
+          ev.preventDefault();
+          el("customerName").readOnly = false;
+          el("mobilePhone").readOnly = false;
+        });
+      }
+    }
+
     el("bizRegNo").addEventListener("input", (e) => {
       let digits = e.target.value.replace(/\D/g, "").slice(0, 10);
       let formatted = digits;
