@@ -120,6 +120,8 @@
         <button id="genTempIdBtn" style="flex:0 0 auto;">임시번호 발급</button>
       </div>
 
+      <div id="memberCheckStatus" style="font-size:12px; margin-top:4px;"></div>
+
       <label>성명</label>
       <input type="text" id="customerName" placeholder="개인고객 실명" />
 
@@ -232,6 +234,54 @@
       const prefix = letters[Math.floor(Math.random() * letters.length)];
       el("customerId").value = prefix + rand;
     });
+
+    // ---------- 고객번호 입력 시 조합원명단 자동조회 ----------
+    let customerIdDebounce = null;
+    el("customerId").addEventListener("input", (e) => {
+      clearTimeout(customerIdDebounce);
+      const id = e.target.value.trim();
+      customerIdDebounce = setTimeout(() => checkCustomerId(id), 400);
+    });
+
+    async function checkCustomerId(id) {
+      const statusBox = el("memberCheckStatus");
+      const nameInput = el("customerName");
+
+      if (!/^\d{8}$/.test(id)) {
+        statusBox.textContent = "";
+        nameInput.readOnly = false;
+        return;
+      }
+
+      const { data, error } = await supabaseClient
+        .from("customers")
+        .select("name, is_member")
+        .eq("customer_id", id)
+        .maybeSingle();
+
+      if (error || !data) {
+        statusBox.innerHTML = `<span style="color:var(--muted);">조합원 명단에 없는 고객번호입니다. 성명을 직접 입력해주세요.</span>`;
+        nameInput.readOnly = false;
+        return;
+      }
+
+      if (data.is_member) {
+        nameInput.value = data.name || "";
+        nameInput.readOnly = true;
+        statusBox.innerHTML = `<span style="color:var(--accent);">✅ 조합원 명단 확인됨 - 성명 자동입력 (직접 수정하려면 <a href="#" id="unlockNameBtn">여기</a> 클릭)</span>`;
+        const unlockBtn = document.getElementById("unlockNameBtn");
+        if (unlockBtn) {
+          unlockBtn.addEventListener("click", (ev) => {
+            ev.preventDefault();
+            nameInput.readOnly = false;
+          });
+        }
+      } else {
+        nameInput.value = data.name || "";
+        nameInput.readOnly = false;
+        statusBox.innerHTML = `<span style="color:var(--muted);">조합원은 아니지만 기존 등록된 고객번호입니다.</span>`;
+      }
+    }
 
     el("manualToggle").addEventListener("change", (e) => {
       el("naverSearchBox").style.display = e.target.checked ? "none" : "block";
@@ -396,6 +446,8 @@
         .forEach(id => el(id).value = "");
       selectedNaverItem = null;
       el("naverResults").style.display = "none";
+      el("customerName").readOnly = false;
+      el("memberCheckStatus").innerHTML = "";
     }
 
     el("resetBtn").addEventListener("click", () => {
