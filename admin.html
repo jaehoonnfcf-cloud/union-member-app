@@ -88,6 +88,7 @@
     <div class="tabs">
       <div class="tab active" data-tab="history">이력관리</div>
       <div class="tab" data-tab="users">사용자관리</div>
+      <div class="tab" data-tab="members">조합원명단</div>
     </div>
 
     <!-- 이력관리 탭 -->
@@ -119,9 +120,30 @@
       <div id="userStatus"></div>
       <div id="userList">불러오는 중...</div>
     </div>
+
+    <!-- 조합원명단 탭 -->
+    <div id="tab-members" class="card" style="display:none;">
+      <p style="font-size:13px; color:var(--muted); margin-top:0;">
+        CSV 파일 형식: 첫 번째 열 = 고객번호(8자리 숫자), 두 번째 열 = 성명.<br/>
+        헤더(제목) 행이 있어도 자동으로 구분해서 건너뜁니다. 업로드된 고객번호는 모두 "조합원"으로 등록됩니다.
+      </p>
+      <div class="add-row">
+        <input type="file" id="csvFile" accept=".csv" />
+        <button class="primary" id="uploadCsvBtn">업로드</button>
+      </div>
+      <div id="csvStatus"></div>
+
+      <h4 style="margin-bottom:6px;">등록된 조합원 수: <span id="memberCount">-</span></h4>
+      <div class="filters">
+        <input type="text" id="memberSearch" placeholder="고객번호 또는 성명 검색" />
+        <button id="memberSearchBtn">검색</button>
+      </div>
+      <div id="memberList">불러오는 중...</div>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <script>
     const SUPABASE_URL = "https://kakujhsdxyljkstpfymk.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtha3VqaHNkeHlsamtzdHBmeW1rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzNDM1OTYsImV4cCI6MjEwMDkxOTU5Nn0.5mKR4Zksu9J791-fqM9KL-scOS0xB3Hhvj5nuQKoVbE";
@@ -159,6 +181,8 @@
         tab.classList.add("active");
         el("tab-history").style.display = tab.dataset.tab === "history" ? "block" : "none";
         el("tab-users").style.display = tab.dataset.tab === "users" ? "block" : "none";
+        el("tab-members").style.display = tab.dataset.tab === "members" ? "block" : "none";
+        if (tab.dataset.tab === "members") loadMembers();
       });
     });
 
@@ -294,6 +318,100 @@
           loadUsers();
         });
       });
+    }
+    // ---------- 조합원명단 CSV 업로드 ----------
+    el("uploadCsvBtn").addEventListener("click", () => {
+      const file = el("csvFile").files[0];
+      if (!file) {
+        el("csvStatus").innerHTML = `<p style="color:var(--warn);">파일을 선택해주세요.</p>`;
+        return;
+      }
+      el("csvStatus").innerHTML = `업로드 중...`;
+
+      Papa.parse(file, {
+        skipEmptyLines: true,
+        complete: async (result) => {
+          const rows = result.data;
+          const records = [];
+          let skipped = 0;
+
+          for (const row of rows) {
+            const rawId = (row[0] || "").toString().trim();
+            const name = (row[1] || "").toString().trim();
+
+            if (/^\d{8}$/.test(rawId)) {
+              records.push({
+                customer_id: rawId,
+                is_temp_id: false,
+                is_member: true,
+                name: name || null
+              });
+            } else {
+              skipped++; // 헤더 행이거나 형식이 안 맞는 행
+            }
+          }
+
+          if (records.length === 0) {
+            el("csvStatus").innerHTML = `<p style="color:var(--warn);">유효한 행이 없습니다. 첫 번째 열이 8자리 숫자 고객번호인지 확인해주세요.</p>`;
+            return;
+          }
+
+          const { error } = await supabaseClient
+            .from("customers")
+            .upsert(records, { onConflict: "customer_id" });
+
+          if (error) {
+            el("csvStatus").innerHTML = `<p style="color:var(--warn);">업로드 실패: ${error.message}</p>`;
+            return;
+          }
+
+          el("csvStatus").innerHTML = `<p style="color:var(--accent);">✅ ${records.length}건 등록/갱신 완료 (건너뜀 ${skipped}건)</p>`;
+          el("csvFile").value = "";
+          loadMembers();
+        }
+      });
+    });
+
+    el("memberSearchBtn").addEventListener("click", loadMembers);
+
+    async function loadMembers() {
+      el("memberList").innerHTML = "불러오는 중...";
+
+      const { count } = await supabaseClient
+        .from("customers")
+        .select("*", { count: "exact", head: true })
+        .eq("is_member", true);
+      el("memberCount").textContent = count ?? "-";
+
+      const search = el("memberSearch").value.trim();
+      let query = supabaseClient
+        .from("customers")
+        .select("*")
+        .eq("is_member", true)
+        .order("customer_id")
+        .limit(200);
+
+      if (search) {
+        query = query.or(`customer_id.ilike.%${search}%,name.ilike.%${search}%`);
+      }
+
+      const { data, error } = await query;
+      if (error) {
+        el("memberList").innerHTML = `조회 실패: ${error.message}`;
+        return;
+      }
+      if (!data || data.length === 0) {
+        el("memberList").innerHTML = "등록된 조합원이 없습니다.";
+        return;
+      }
+      el("memberList").innerHTML = `
+        <table>
+          <thead><tr><th>고객번호</th><th>성명</th></tr></thead>
+          <tbody>
+            ${data.map(m => `<tr><td>${m.customer_id}</td><td>${m.name || "-"}</td></tr>`).join("")}
+          </tbody>
+        </table>
+      `;
     }
   </script>
 </body>
