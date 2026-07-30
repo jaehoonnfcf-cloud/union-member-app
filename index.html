@@ -583,7 +583,7 @@
       el("listArea").innerHTML = `
         <table>
           <thead>
-            <tr><th>고객번호</th><th>성명</th><th>상호</th><th>주소</th><th>전화</th><th>조합원</th><th>등록자</th></tr>
+            <tr><th>고객번호</th><th>성명</th><th>상호</th><th>주소</th><th>전화</th><th>조합원</th><th>등록자</th><th></th></tr>
           </thead>
           <tbody>
             ${data.map(r => `
@@ -595,11 +595,24 @@
                 <td>${r.phone || ""}</td>
                 <td><span class="badge ${r.is_member ? "member" : "nonmember"}">${r.is_member ? "조합원" : "비조합원"}</span></td>
                 <td>${r.created_by || ""}</td>
+                <td><button class="ghost delete-btn" data-id="${r.id}" style="color:var(--warn);">삭제</button></td>
               </tr>
             `).join("")}
           </tbody>
         </table>
       `;
+
+      document.querySelectorAll(".delete-btn").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          if (!confirm("이 사업장 등록건을 삭제할까요? 삭제 이력은 관리자 페이지에 남습니다.")) return;
+          const { error } = await supabaseClient.from("business_sites").delete().eq("id", btn.dataset.id);
+          if (error) {
+            alert("삭제 실패: " + error.message + "\n본인이 등록한 건이 아니면 관리자만 삭제할 수 있습니다.");
+            return;
+          }
+          loadRecentList();
+        });
+      });
     }
   </script>
 </body>
