@@ -297,7 +297,6 @@
       const nextBtn = document.getElementById("historyNextBtn");
       if (prevBtn) prevBtn.addEventListener("click", () => { historyPage--; loadHistory(); });
       if (nextBtn) nextBtn.addEventListener("click", () => { historyPage++; loadHistory(); });
-      `;
     }
 
     el("addUserBtn").addEventListener("click", async () => {
